@@ -14,11 +14,30 @@
 
 using namespace std;
 
-
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 
 string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
+
+int binarySearch(int *arr,int key,int minIdx,int maxIdx){
+	if (arr[maxIdx]<= key)
+		return maxIdx;
+	if (maxIdx - minIdx == 1) 
+		return minIdx;
+	int idx = (minIdx + maxIdx) >> 1;
+	if (arr[idx] > key) 
+		return binarySearch(arr, key, minIdx, idx);
+	return binarySearch(arr, key, idx, maxIdx);
+}
+
+int findContainer(int key,int *routingArr) {
+	return binarySearch(routingArr, key, 0, NUM_OF_WORKER-1);
+}
+
+bool belongTo(int workerNum, int key, int *arr) {
+	if (workerNum==(sizeof(arr)/sizeof(*arr))-1) return (arr[workerNum]<=key);
+	return (arr[workerNum]<=key) && (arr[workerNum+1]>key);
+}
 
 int main(){
 	std::atomic<int> activeThreads;
@@ -26,6 +45,11 @@ int main(){
 	IdxState *idxs[NUM_OF_WORKER];
 	thread workerThread[NUM_OF_WORKER];
 	
+	int arr[]={1,5,11,23,100,124};
+	int res=findContainer(4,arr);
+	printf("Container: %d\n", res);
+	printf("BelongTo: %s\n", belongTo(1,4,arr)?"True":"False");
+
 	KeyType keyType=INT;
 	char name[10];
 	string s;	
