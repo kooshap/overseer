@@ -17,7 +17,9 @@ using namespace std;
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 
+taskQueue *tq=new taskQueue[NUM_OF_WORKER];
 string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
+int *writerRouter=new int[NUM_OF_WORKER];
 
 int binarySearch(int *arr,int key,int minIdx,int maxIdx){
 	if (arr[maxIdx]<= key)
@@ -38,6 +40,18 @@ bool belongTo(int workerNum, int key, int *arr) {
 	if (workerNum==(sizeof(arr)/sizeof(*arr))-1) return (arr[workerNum]<=key);
 	return (arr[workerNum]<=key) && (arr[workerNum+1]>key);
 }
+
+void routeTask(task t) {
+	tq[findContainer(t.key, writerRouter)].put(t);
+}
+
+void overseer_write(int key,string val) {
+	routeTask(*(new task(key,val,WRITE_OP)));
+}
+
+void overseer_delete(int key) {
+	routeTask(*(new task(key,NULL,DELETE_OP)));
+} 
 
 int main(){
 	std::atomic<int> activeThreads;
@@ -66,7 +80,6 @@ int main(){
 		//printf("Index Opened Succesfully, errcode: %d\n", er);
 	}
 
-	taskQueue *tq=new taskQueue[NUM_OF_WORKER];
 	int wId;
 
 	for (int i=0;i<MAXKEY;i++){

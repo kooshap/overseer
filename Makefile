@@ -25,6 +25,6 @@ bptree64: bptree.cc
 
 .PHONY: clean
 clean:
-	-rm lib.so
+	-rm lib.so *.o
 	
 
