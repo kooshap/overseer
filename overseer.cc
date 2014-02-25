@@ -9,8 +9,8 @@
 #include "worker.h"
 
 #define NUM_OF_WORKER 2
-#define NREAD 1000000
-#define MAXKEY 100000
+#define NREAD 100
+#define MAXKEY 100
 
 using namespace std;
 
@@ -46,12 +46,29 @@ void routeTask(task t) {
 }
 
 void overseer_write(int key,string val) {
-	routeTask(*(new task(key,val,WRITE_OP)));
+	task t;
+	t.key=key;
+	t.value=val;
+	t.opCode=WRITE_OP;
+	routeTask(t);
+	//routeTask(*(new task(key,val,WRITE_OP)));
 }
 
 void overseer_delete(int key) {
 	routeTask(*(new task(key,NULL,DELETE_OP)));
 } 
+
+char *read(int k,IdxState *myIdxs){
+	Record *record=(Record *)malloc(sizeof(Record));
+	//record->key.keyval.intkey=randomKey();
+	record->key.keyval.intkey=k;
+	ErrCode er=get(myIdxs,NULL,record);
+	if (!er){
+		return record->payload;
+	}else{
+		return NULL;
+	}
+}
 
 int main(){
 	std::atomic<int> activeThreads;
@@ -61,8 +78,8 @@ int main(){
 	
 	int arr[]={1,5,11,23,100,124};
 	int res=findContainer(4,arr);
-	printf("Container: %d\n", res);
-	printf("BelongTo: %s\n", belongTo(1,4,arr)?"True":"False");
+	//printf("Container: %d\n", res);
+	//printf("BelongTo: %s\n", belongTo(1,4,arr)?"True":"False");
 
 	KeyType keyType=INT;
 	char name[10];
@@ -82,20 +99,33 @@ int main(){
 
 	int wId;
 
-	for (int i=0;i<MAXKEY;i++){
-		wId=i%NUM_OF_WORKER;	
-		task t;
-		t.key=i;
-		t.value=list[i%10];
+	for (int i=0;i<NUM_OF_WORKER;i++){
+		writerRouter[i]=round(MAXKEY/NUM_OF_WORKER)*i;
+		printf("writerRouter[%d]=%d\n",i,writerRouter[i]);
+	}
 
-		tq[wId].put(t);
+	for (int i=0;i<MAXKEY;i++){
+		overseer_write(i,list[i%10]);
 	}	
 	
+	printf("write queue filled\n");
+
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,round(NREAD/NUM_OF_WORKER),&tq[i],idxs[i]);
+		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(*idxs[i]));
 		workerThread[i].detach();
 	}
+
+	this_thread::sleep_for (std::chrono::milliseconds(3000));
+	for (int i=0;i<NREAD;i++){
+		//printf("findContainer(%d)=%d\n",i,findContainer(i,writerRouter));
+		char *result=read(i,idxs[findContainer(i,writerRouter)]);
+		if (result!=NULL)
+			printf("%d, %s\n",i,result);
+		else
+			printf("%d Not found\n",i);
+	}
+
 	while (activeThreads)
 		this_thread::sleep_for (std::chrono::milliseconds(100));
 

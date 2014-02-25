@@ -17,7 +17,12 @@ class taskQueue{
 			consumerIdx=0;
 			taskArr=new task[ARRAY_LENGTH];
 		} 
-		
+		/*taskQueue(taskQueue&&) {}
+		taskQueue& operator=(taskQueue&&) {}
+
+		taskQueue(const taskQueue&) =delete;
+		taskQueue& operator=(const taskQueue&) =delete;    
+		*/
 		void put(task t){
 			taskArr[producerIdx]=t;
 			producerIdx++;

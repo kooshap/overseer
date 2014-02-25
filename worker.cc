@@ -15,17 +15,17 @@ typedef minstd_rand G;
 typedef uniform_int_distribution<> D;
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
-G g;
-D d(0, MAXKEY);
-IdxState *myIdxs;
-taskQueue *myTq;
+//G g;
+//D d(0, MAXKEY);
+//IdxState *myIdxs;
+//taskQueue *myTq;
 
 
-int randomKey(){
+/*int randomKey(){
 	return d(g);
-}
+}*/
 
-int write(int k, string v){
+int worker_write(int k, string v,IdxState *myIdxs){
 	Key *key=(Key *)malloc(sizeof(Key));
 	key->type=INT;
 	key->keyval.intkey=k;
@@ -38,7 +38,7 @@ int write(int k, string v){
 	return (int)er;
 }
 
-char *read(int k){
+char *worker_read(int k,IdxState *myIdxs){
 	Record *record=(Record *)malloc(sizeof(Record));
 	//record->key.keyval.intkey=randomKey();
 	record->key.keyval.intkey=k;
@@ -50,32 +50,34 @@ char *read(int k){
 	}
 }
 
-void setTaskQueue(taskQueue *imyTq){
+/*void setTaskQueue(taskQueue *imyTq){
 	myTq=imyTq;
-}
+}*/
 
-void run(int id,std::atomic<int> *activeThreads,int nread,taskQueue *itq, IdxState *iidxs){
+void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs){
 	string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
-	myTq=itq;
-	myIdxs=iidxs;
-
-	task t=myTq->get();
-	while (t.key!=-1) { 	
-		write(t.key, t.value);
-		t=myTq->get();
-	}
+	//myTq=itq;
+	//myIdxs=&iidxs;
 
 	Clock::time_point t0 = Clock::now();
-	for (int i=0;i<nread;i+=2){
-		char *result=read(i);
-		//if (result!=NULL){ 
-			//printf("%d :%s\n", i,result);
-		//}
-		//if (result==NULL){ 
-			//printf("Key not found\n");
-		//}
+	
+	task t=itq.get();
+	while (t.key!=-1) { 	
+		worker_write(t.key, t.value,&iidxs);
+		printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
+		t=itq.get();
 	}
+
+	/*for (int i=0;i<nread;i+=2){
+		char *result=worker_read(i);
+		if (result!=NULL){ 
+			printf("%d :%s\n", i,result);
+		}
+		if (result==NULL){ 
+			printf("Key not found\n");
+		}
+	}*/
 	Clock::time_point t1 = Clock::now();
 	printf("Time: %f\n", sec(t1-t0).count());
 	
