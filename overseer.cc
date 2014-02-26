@@ -8,9 +8,9 @@
 #include <math.h>
 #include "worker.h"
 
-#define NUM_OF_WORKER 2
-#define NREAD 100
-#define MAXKEY 100
+#define NUM_OF_WORKER 1
+#define NREAD 100000
+#define MAXKEY 100000
 
 using namespace std;
 
@@ -97,7 +97,7 @@ int main(){
 		//printf("Index Opened Succesfully, errcode: %d\n", er);
 	}
 
-	int wId;
+	//int wId;
 
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		writerRouter[i]=round(MAXKEY/NUM_OF_WORKER)*i;
@@ -108,7 +108,7 @@ int main(){
 		overseer_write(i,list[i%10]);
 	}	
 	
-	printf("write queue filled\n");
+	//printf("write queue filled\n");
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
@@ -117,14 +117,21 @@ int main(){
 	}
 
 	this_thread::sleep_for (std::chrono::milliseconds(3000));
+
+	int missCount=0;
 	for (int i=0;i<NREAD;i++){
 		//printf("findContainer(%d)=%d\n",i,findContainer(i,writerRouter));
 		char *result=read(i,idxs[findContainer(i,writerRouter)]);
-		if (result!=NULL)
-			printf("%d, %s\n",i,result);
-		else
-			printf("%d Not found\n",i);
+		if (result!=NULL) {
+			//printf("%d, %s\n",i,result);
+		}
+		else {
+			missCount++;
+			//printf("%d Not found\n",i);
+		}
 	}
+	
+	printf("%d reads missed\n",missCount);
 
 	while (activeThreads)
 		this_thread::sleep_for (std::chrono::milliseconds(100));

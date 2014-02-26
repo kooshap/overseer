@@ -7,7 +7,7 @@ task.o: task.cc
 worker.o: worker.cc
 	g++ -std=gnu++0x -c worker.cc 
 
-overseer: overseer.cc worker.o task.o taskQueue.o
+overseer: overseer.cc worker.o task.o taskQueue.o bptree64
 	g++ -std=gnu++0x -L. -lpthread -o overseer worker.o task.o taskQueue.o overseer.cc lib.so 
 
 all: nomap.cc

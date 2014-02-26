@@ -1,8 +1,12 @@
 #include <math.h>
+#include <stdio.h>
 #include <atomic>
 #include "task.cc"
 
-#define ARRAY_LENGTH 100000
+const int ARRAY_LENGTH=1<<19;
+const int ARRAY_MASK=(1<<19)-1;
+const int MAX_INSERTERS=64;
+const int BOUND=ARRAY_LENGTH-MAX_INSERTERS;
 
 class taskQueue{
 	private:
@@ -24,9 +28,14 @@ class taskQueue{
 		taskQueue& operator=(const taskQueue&) =delete;    
 		*/
 		void put(task t){
+			while(((producerIdx-consumerIdx)&ARRAY_MASK)>BOUND) {
+				printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
+			}
+			
 			taskArr[producerIdx]=t;
 			producerIdx++;
-			producerIdx=producerIdx%ARRAY_LENGTH;
+			producerIdx.fetch_and(ARRAY_MASK);
+			//producerIdx=producerIdx%ARRAY_LENGTH;
 		}
 		task get(){
 			task t=taskArr[consumerIdx];
@@ -35,8 +44,8 @@ class taskQueue{
 				return t;	
 			}
 
-			consumerIdx+=1;
-			consumerIdx=consumerIdx%ARRAY_LENGTH;
+			consumerIdx++;
+			consumerIdx&=ARRAY_MASK;
 			return t;
 		}
 };

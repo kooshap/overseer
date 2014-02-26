@@ -65,7 +65,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs)
 	task t=itq.get();
 	while (t.key!=-1) { 	
 		worker_write(t.key, t.value,&iidxs);
-		printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
+		//printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
 		t=itq.get();
 	}
 
@@ -81,6 +81,6 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs)
 	Clock::time_point t1 = Clock::now();
 	printf("Time: %f\n", sec(t1-t0).count());
 	
-	*activeThreads-=1;
+	--*activeThreads;
 }
 
