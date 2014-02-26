@@ -5,6 +5,7 @@
 #include <cstring>
 #include <random>
 #include <chrono>
+#include <thread>
 #include <atomic>
 #include "worker.h"
 
@@ -50,6 +51,13 @@ char *worker_read(int k,IdxState *myIdxs){
 	}
 }
 
+int worker_delete(int k,IdxState *myIdxs){
+	Record *record=(Record *)malloc(sizeof(Record));
+	record->key.keyval.intkey=k;
+	ErrCode er=deleteRecord(myIdxs,NULL,record);
+	return (int)er;
+}
+
 /*void setTaskQueue(taskQueue *imyTq){
 	myTq=imyTq;
 }*/
@@ -63,9 +71,23 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs)
 	Clock::time_point t0 = Clock::now();
 	
 	task t=itq.get();
-	while (t.key!=-1) { 	
-		worker_write(t.key, t.value,&iidxs);
-		//printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
+
+	while (t.opCode!=EXIT_OP) {
+		switch (t.opCode) {
+			case WRITE_OP:
+				worker_write(t.key, t.value,&iidxs);
+				//printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
+				break;
+			case DELETE_OP:
+				if (!worker_delete(t.key, &iidxs)) {
+					//printf("Thread #%d deleted key #%d\n",id,t.key);
+				}
+				break;
+			default:
+				printf("Unknown opCode\n",id,t.key);
+				//this_thread::sleep_for (std::chrono::milliseconds(10));
+
+		}
 		t=itq.get();
 	}
 

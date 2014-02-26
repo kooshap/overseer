@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <atomic>
+#include <chrono>
+#include <thread>
 #include "task.cc"
 
 const int ARRAY_LENGTH=1<<19;
@@ -38,12 +40,12 @@ class taskQueue{
 			//producerIdx=producerIdx%ARRAY_LENGTH;
 		}
 		task get(){
-			task t=taskArr[consumerIdx];
-			if (consumerIdx==producerIdx) {
-				t.key=-1;
-				return t;	
+			while (consumerIdx==producerIdx) {
+				//printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
+				this_thread::sleep_for (std::chrono::milliseconds(1));
+				continue;
 			}
-
+			task t=taskArr[consumerIdx];
 			consumerIdx++;
 			consumerIdx&=ARRAY_MASK;
 			return t;

@@ -8,9 +8,9 @@
 #include <math.h>
 #include "worker.h"
 
-#define NUM_OF_WORKER 1
-#define NREAD 100000
-#define MAXKEY 100000
+#define NUM_OF_WORKER 2
+#define NREAD 100
+#define MAXKEY 100
 
 using namespace std;
 
@@ -55,8 +55,20 @@ void overseer_write(int key,string val) {
 }
 
 void overseer_delete(int key) {
-	routeTask(*(new task(key,NULL,DELETE_OP)));
+	task t;
+	t.key=key;
+	t.value.clear();
+	t.opCode=DELETE_OP;
+	routeTask(t);
 } 
+
+void worker_exit(int id) {
+	task t;
+	t.key=0;
+	t.value.clear();
+	t.opCode=EXIT_OP;
+	tq[id].put(t);
+}
 
 char *read(int k,IdxState *myIdxs){
 	Record *record=(Record *)malloc(sizeof(Record));
@@ -76,8 +88,8 @@ int main(){
 	IdxState *idxs[NUM_OF_WORKER];
 	thread workerThread[NUM_OF_WORKER];
 	
-	int arr[]={1,5,11,23,100,124};
-	int res=findContainer(4,arr);
+	//int arr[]={1,5,11,23,100,124};
+	//int res=findContainer(4,arr);
 	//printf("Container: %d\n", res);
 	//printf("BelongTo: %s\n", belongTo(1,4,arr)?"True":"False");
 
@@ -107,7 +119,8 @@ int main(){
 	for (int i=0;i<MAXKEY;i++){
 		overseer_write(i,list[i%10]);
 	}	
-	
+
+
 	//printf("write queue filled\n");
 
 	Clock::time_point t0 = Clock::now();
@@ -133,6 +146,14 @@ int main(){
 	
 	printf("%d reads missed\n",missCount);
 
+	for (int i=0;i<MAXKEY;i++){
+		overseer_delete(i);
+	}
+
+	for (int i=0;i<NUM_OF_WORKER;i++){
+		worker_exit(i);
+	}
+	
 	while (activeThreads)
 		this_thread::sleep_for (std::chrono::milliseconds(100));
 

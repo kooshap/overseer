@@ -4,6 +4,7 @@ using namespace std;
 typedef enum opCodeType {
 	WRITE_OP,
 	DELETE_OP,
+	EXIT_OP
 } opCodeType;
 
 struct task {
