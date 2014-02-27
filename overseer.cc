@@ -9,8 +9,8 @@
 #include "worker.h"
 
 #define NUM_OF_WORKER 2
-#define NREAD 100
-#define MAXKEY 100
+#define NREAD 1000000
+#define MAXKEY 1000000
 
 using namespace std;
 
@@ -70,47 +70,22 @@ void worker_exit(int id) {
 	tq[id].put(t);
 }
 
-char *read(int k,IdxState *myIdxs){
-	Record *record=(Record *)malloc(sizeof(Record));
-	//record->key.keyval.intkey=randomKey();
-	record->key.keyval.intkey=k;
-	ErrCode er=get(myIdxs,NULL,record);
-	if (!er){
-		return record->payload;
+int overseer_read(int k,node *root){
+	record *rec=(record *)malloc(sizeof(record));
+	rec=find(root,k,false);
+	if (rec){
+		return rec->value;
 	}else{
-		return NULL;
+		return -1;
 	}
 }
 
 int main(){
 	std::atomic<int> activeThreads;
 	activeThreads=NUM_OF_WORKER;
-	IdxState *idxs[NUM_OF_WORKER];
+	node *root[NUM_OF_WORKER]={0};
 	thread workerThread[NUM_OF_WORKER];
 	
-	//int arr[]={1,5,11,23,100,124};
-	//int res=findContainer(4,arr);
-	//printf("Container: %d\n", res);
-	//printf("BelongTo: %s\n", belongTo(1,4,arr)?"True":"False");
-
-	KeyType keyType=INT;
-	char name[10];
-	string s;	
-	for (int i=0;i<NUM_OF_WORKER;i++){ 
-		s = std::to_string(i);
-		strcpy(name,s.c_str());
-		//printf("%s\n", name);
-		ErrCode er=create(keyType, name);
-		if (!er)
-			printf("Index %s Created Succesfully, errcode:%d\n", name , er);
-
-		er=openIndex(name, &idxs[i]);
-		//if (!er)
-		//printf("Index Opened Succesfully, errcode: %d\n", er);
-	}
-
-	//int wId;
-
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		writerRouter[i]=round(MAXKEY/NUM_OF_WORKER)*i;
 		printf("writerRouter[%d]=%d\n",i,writerRouter[i]);
@@ -120,23 +95,21 @@ int main(){
 		overseer_write(i,list[i%10]);
 	}	
 
-
 	//printf("write queue filled\n");
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(*idxs[i]));
+		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(root[i]));
 		workerThread[i].detach();
 	}
-
 	this_thread::sleep_for (std::chrono::milliseconds(3000));
 
 	int missCount=0;
 	for (int i=0;i<NREAD;i++){
 		//printf("findContainer(%d)=%d\n",i,findContainer(i,writerRouter));
-		char *result=read(i,idxs[findContainer(i,writerRouter)]);
-		if (result!=NULL) {
-			//printf("%d, %s\n",i,result);
+		int result=overseer_read(i,root[findContainer(i,writerRouter)]);
+		if (result!=-1) {
+			//printf("%d, %d\n",i,result);
 		}
 		else {
 			missCount++;
@@ -145,11 +118,12 @@ int main(){
 	}
 	
 	printf("%d reads missed\n",missCount);
-
+	
+	
 	for (int i=0;i<MAXKEY;i++){
 		overseer_delete(i);
 	}
-
+	
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		worker_exit(i);
 	}

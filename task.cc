@@ -4,6 +4,8 @@ using namespace std;
 typedef enum opCodeType {
 	WRITE_OP,
 	DELETE_OP,
+	PUSH_CHUNK_OP,
+	REMOVE_CHUNK_OP,
 	EXIT_OP
 } opCodeType;
 

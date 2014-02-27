@@ -323,6 +323,8 @@ ErrCode insertRecord(IdxState *idxState, TxnState *txn, Key *k, const char* payl
  */
 ErrCode deleteRecord(IdxState *idxState, TxnState *txn, Record *record);
 
+char *getFirstLeaf(IdxState *idxState);
+
 #ifdef __cplusplus
 }
 #endif

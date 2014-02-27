@@ -1355,3 +1355,26 @@ ErrCode get(IdxState *idxState, TxnState *txn, Record *record)
 	return idxState->index->get(*record);
 }
 
+char *getFirstLeaf(IdxState *idxState)
+{
+	Iter iter;
+	NodeHead *node = idxState->index->root;
+
+	// go down internal nodes
+	while(!node->null)
+	{
+		// always get the fisrt child
+		iter.pos = node->first();
+		node = node->getChild(iter.pos);
+	}
+	iter.leaf = (LeafHead *)node;
+	// the first position in the first leaf	
+	iter.pos = iter.leaf->first();	
+	Payload *p = iter.leaf->entries[iter.pos].payload;
+	while(!p) {
+		iter.pos=iter.leaf->nextPos(iter.pos);
+		p=iter.leaf->entries[iter.pos].payload;
+	}
+	// rerurn the first key
+	return iter.leaf->getKey(iter.pos);
+}

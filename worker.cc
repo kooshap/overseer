@@ -18,7 +18,6 @@ typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 //G g;
 //D d(0, MAXKEY);
-//IdxState *myIdxs;
 //taskQueue *myTq;
 
 
@@ -26,19 +25,28 @@ typedef chrono::duration<double> sec;
 	return d(g);
 }*/
 
-int worker_write(int k, string v,IdxState *myIdxs){
+int worker_write(node *&root,int k, int v){
+	/*
 	Key *key=(Key *)malloc(sizeof(Key));
 	key->type=INT;
 	key->keyval.intkey=k;
 	char *payload=new char[v.size() + 1];
 	copy(v.begin(), v.end(), payload);
 	payload[v.size()] = '\0';
-	ErrCode er=insertRecord(myIdxs,NULL,key,payload);
+	*/
+	if (root) {
+		//printf("root: %p\n",bptinsert(root,k,k));
+		root=bptinsert(root,k,k);
+	}
+	else {
+		//printf("root: %p\n",bptinsert(root,k,k));
+		root=bptinsert(root,k,k);
+	}
 	//if (!er)
 	//	printf("Wrote %d:%s succesfully\n", k, v.c_str());
-	return (int)er;
+	return 0;
 }
-
+/*
 char *worker_read(int k,IdxState *myIdxs){
 	Record *record=(Record *)malloc(sizeof(Record));
 	//record->key.keyval.intkey=randomKey();
@@ -50,23 +58,23 @@ char *worker_read(int k,IdxState *myIdxs){
 		return NULL;
 	}
 }
-
-int worker_delete(int k,IdxState *myIdxs){
-	Record *record=(Record *)malloc(sizeof(Record));
-	record->key.keyval.intkey=k;
-	ErrCode er=deleteRecord(myIdxs,NULL,record);
-	return (int)er;
+*/
+int worker_delete(node *&root,int k){
+	root=bptdelete(root,k);
+	return 0;
 }
 
 /*void setTaskQueue(taskQueue *imyTq){
 	myTq=imyTq;
 }*/
 
-void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs){
+void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, node *&root){
 	string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
 	//myTq=itq;
-	//myIdxs=&iidxs;
+
+	int leftMostKey=-1;
+	int rightMostKey=-1;
 
 	Clock::time_point t0 = Clock::now();
 	
@@ -75,13 +83,16 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, IdxState &iidxs)
 	while (t.opCode!=EXIT_OP) {
 		switch (t.opCode) {
 			case WRITE_OP:
-				worker_write(t.key, t.value,&iidxs);
+				worker_write(root,t.key, t.key);	
+				//printf("root: %p\n",root);
 				//printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
 				break;
 			case DELETE_OP:
-				if (!worker_delete(t.key, &iidxs)) {
+				if (!worker_delete(root,t.key)) {
 					//printf("Thread #%d deleted key #%d\n",id,t.key);
 				}
+				break;
+			case PUSH_CHUNK_OP:
 				break;
 			default:
 				printf("Unknown opCode\n",id,t.key);
