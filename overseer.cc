@@ -9,8 +9,8 @@
 #include "worker.h"
 
 #define NUM_OF_WORKER 2
-#define NREAD 1000000
-#define MAXKEY 1000000
+#define NREAD 100
+#define MAXKEY 100
 
 using namespace std;
 
@@ -99,10 +99,10 @@ int main(){
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(root[i]));
+		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(root[i]),ref(writerRouter));
 		workerThread[i].detach();
 	}
-	this_thread::sleep_for (std::chrono::milliseconds(3000));
+	this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	int missCount=0;
 	for (int i=0;i<NREAD;i++){

@@ -91,6 +91,7 @@ int find_range( node * root, int key_start, int key_end, bool verbose,
 		int returned_keys[], void * returned_pointers[]); 
 node * find_leaf( node * root, int key, bool verbose );
 record * find( node * root, int key, bool verbose );
+record * find_smallest_key( node * root, bool verbose );
 int cut( int length );
 
 // Insertion.
@@ -120,6 +121,7 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
 node * delete_entry( node * root, node * n, int key, void * pointer );
 node * bptdelete( node * root, int key );
 
+node * destroy_tree(node * root);
 #ifdef _cplusplus
 }
 # endif

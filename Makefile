@@ -26,7 +26,7 @@ bptree64.o: bptree.cc
 	g++ -O3 -m64 -L/usr/lib64 -c -o $@ bptree.cc
 
 bpt.o: bpt.c
-	gcc -c -o $@ bpt.c
+	gcc -O2 -c -o $@ bpt.c
 
 .PHONY: clean
 clean:
