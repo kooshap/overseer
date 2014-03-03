@@ -92,6 +92,7 @@ int find_range( node * root, int key_start, int key_end, bool verbose,
 node * find_leaf( node * root, int key, bool verbose );
 record * find( node * root, int key, bool verbose );
 record * find_smallest_key( node * root, bool verbose );
+record * find_biggest_key( node * root, bool verbose );
 int cut( int length );
 
 // Insertion.

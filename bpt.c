@@ -355,6 +355,38 @@ node * find_left_most_leaf( node * root, bool verbose ) {
 	return c;
 }
 
+/* Traces the path from the root to the right-most leaf.
+ * Displays information about the path
+ * if the verbose flag is set.
+ * Returns the left-most leaf.
+ * Added by Koosha
+ */
+node * find_right_most_leaf( node * root, bool verbose ) {
+	int i = 0;
+	node * c = root;
+	if (c == NULL) {
+		if (verbose) 
+			printf("Empty tree.\n");
+		return c;
+	}
+	while (!c->is_leaf) {
+		if (verbose) {
+			printf("[");
+			for (i = 0; i < c->num_keys - 1; i++)
+				printf("%d ", c->keys[i]);
+			printf("%d] ", c->keys[i]);
+		}
+		c = (node *)c->pointers[c->num_keys];
+	}
+	if (verbose) {
+		printf("Leaf [");
+		for (i = 0; i < c->num_keys - 1; i++)
+			printf("%d ", c->keys[i]);
+		printf("%d] ->\n", c->keys[i]);
+	}
+	return c;
+}
+
 
 /* Finds and returns the record to which
  * a key refers.
@@ -372,17 +404,31 @@ record * find( node * root, int key, bool verbose ) {
 }
 
 
-/* Finds and returns the record to which
- * a key refers.
+/* Finds and returns the record 
+ * with the smalles key
+ * Added by Koosha
  */
 record * find_smallest_key( node * root, bool verbose ) {
-	int i = 0;
 	node * c = find_left_most_leaf( root, verbose );
 	if (c == NULL) return NULL;
 	if (0 == c->num_keys) 
 		return NULL;
 	else
 		return (record *)c->pointers[0];
+}
+
+
+/* Finds and returns the record 
+ * with the smalles key
+ * Added by Koosha
+ */
+record * find_biggest_key( node * root, bool verbose ) {
+	node * c = find_right_most_leaf( root, verbose );
+	if (c == NULL) return NULL;
+	if (0 == c->num_keys) 
+		return NULL;
+	else
+		return (record *)c->pointers[c->num_keys-1];
 }
 
 /* Finds the appropriate place to

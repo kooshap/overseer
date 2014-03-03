@@ -85,7 +85,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, node *&root, int
 				worker_write(root,t.key, t.key);	
 				//printf("root: %p\n",root);
 				//printf("Thread #%d wrote key #%d, %s\n",id,t.key,t.value.c_str());
-				//printf("Thread #%d smallest key is %d\n",id,find_smallest_key(root, false)->value);
+				printf("Thread #%d biggest key is %d\n",id,find_biggest_key(root, false)->value);
 				break;
 			case DELETE_OP:
 				if (!worker_delete(root,t.key)) {
