@@ -9,3 +9,6 @@ struct garbage_item
 };
 
 struct garbage_item* add_garbage(void *victim, bool add_to_end);
+
+void empty_garbage();
+

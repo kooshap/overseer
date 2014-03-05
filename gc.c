@@ -1,7 +1,12 @@
+#include <pthread.h>
 #include "gc.h"
 
-struct garbage_item *head = NULL;
-struct garbage_item *curr = NULL;
+struct garbage_item *garbage_head = NULL;
+struct garbage_item *garbage_curr = NULL;
+struct garbage_item *candidate_head = NULL;
+struct garbage_item *candidate_curr = NULL;
+
+pthread_mutex_t swap_mutex;
 
 struct garbage_item* create_garbage_list(void *victim)
 {
@@ -14,14 +19,19 @@ struct garbage_item* create_garbage_list(void *victim)
 	}
 	ptr->victim = victim;
 	ptr->next = NULL;
+	
+	pthread_mutex_lock(&swap_mutex);
 
-	head = curr = ptr;
+	candidate_head = candidate_curr = ptr;
+
+	pthread_mutex_unlock(&swap_mutex);
+	
 	return ptr;
 }
 
 struct garbage_item* add_garbage(void *victim, bool add_to_end)
 {
-	if(NULL == head)
+	if(NULL == candidate_head)
 	{
 		return (create_garbage_list(victim));
 	}
@@ -44,20 +54,26 @@ struct garbage_item* add_garbage(void *victim, bool add_to_end)
 
 	if(add_to_end)
 	{
-		curr->next = ptr;
-		curr = ptr;
+		pthread_mutex_lock(&swap_mutex);
+
+		candidate_curr->next = ptr;
+		candidate_curr = ptr;
+		
+		pthread_mutex_unlock(&swap_mutex);
+	
+		empty_garbage();
 	}
 	else
 	{
-		ptr->next = head;
-		head = ptr;
+		ptr->next = candidate_head;
+		candidate_head = ptr;
 	}
 	return ptr;
 }
 
 struct garbage_item* search_in_list(void *victim, struct garbage_item **prev)
 {
-	struct garbage_item *ptr = head;
+	struct garbage_item *ptr = candidate_head;
 	struct garbage_item *tmp = NULL;
 	bool found = false;
 
@@ -90,23 +106,57 @@ struct garbage_item* search_in_list(void *victim, struct garbage_item **prev)
 }
 
 // Added by Koosha
-int empty_garbage()
+// Sqaps the garbage list and the candidate list
+void swap_lists()
 {
-	struct garbage_item *ptr = head;
 	struct garbage_item *tmp = NULL;
 
+	// Lock the lists
+	pthread_mutex_lock(&swap_mutex);
+
+	tmp = candidate_head;
+	candidate_head = garbage_head;
+	garbage_head = tmp;
+
+	tmp = candidate_curr;
+	candidate_curr = garbage_curr;
+	garbage_curr = tmp;
+
+	// Unlock the lists
+	pthread_mutex_unlock(&swap_mutex);
+}
+
+// Added by Koosha
+// empties the garbage list
+void empty_garbage()
+{
+	struct garbage_item *ptr = NULL;
+	struct garbage_item *tmp = NULL;
+
+	// get the lock	
+	pthread_mutex_lock(&swap_mutex);
+	
+	ptr = garbage_head;
+	// empty the garbage list
 	while (ptr != NULL)
 	{
 		// free the garbage object
+		//printf("Free %p %p\n", ptr->victim, ptr);
 		free(ptr->victim);
 		ptr->victim = NULL;
 		tmp = ptr;
 		ptr = ptr->next;
+		// free the linkedList object
 		free(tmp);
 		tmp = NULL;
 	}
-	curr = NULL;
-	head = NULL;	
+	garbage_curr = NULL;
+	garbage_head = NULL;	
+
+	// release the lock
+	pthread_mutex_unlock(&swap_mutex);
+	
+	swap_lists();
 }
 
 int delete_from_list(void *victim)
@@ -126,13 +176,13 @@ int delete_from_list(void *victim)
 		if(prev != NULL)
 			prev->next = del->next;
 
-		if(del == curr)
+		if(del == candidate_curr)
 		{
-			curr = prev;
+			candidate_curr = prev;
 		}
-		else if(del == head)
+		else if(del == candidate_head)
 		{
-			head = del->next;
+			candidate_head = del->next;
 		}
 	}
 
@@ -144,7 +194,7 @@ int delete_from_list(void *victim)
 
 void print_list(void)
 {
-	struct garbage_item *ptr = head;
+	struct garbage_item *ptr = candidate_head;
 
 	//printf("\n -------Printing list Start------- \n");
 	while(ptr != NULL)
