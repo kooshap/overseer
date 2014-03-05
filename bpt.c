@@ -1247,7 +1247,9 @@ node * bptdelete(node * root, int key) {
 	key_leaf = find_leaf(root, key, false);
 	if (key_record != NULL && key_leaf != NULL) {
 		root = delete_entry(root, key_leaf, key, key_record);
-		free(key_record);
+		//free(key_record);
+		// Added by Koosha
+		add_garbage(key_record,true);
 	}
 	return root;
 }

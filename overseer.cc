@@ -8,9 +8,9 @@
 #include <math.h>
 #include "worker.h"
 
-#define NUM_OF_WORKER 2
-#define NREAD 100
-#define MAXKEY 100
+const int NREAD=100;
+const int MAXKEY=100;
+const int NUM_OF_WORKER=2;
 
 using namespace std;
 
@@ -51,7 +51,6 @@ void overseer_write(int key,string val) {
 	t.value=val;
 	t.opCode=WRITE_OP;
 	routeTask(t);
-	//routeTask(*(new task(key,val,WRITE_OP)));
 }
 
 void overseer_delete(int key) {
@@ -71,13 +70,14 @@ void worker_exit(int id) {
 }
 
 int overseer_read(int k,node *root){
-	record *rec=(record *)malloc(sizeof(record));
+	record *rec=new record();
 	rec=find(root,k,false);
 	if (rec){
 		return rec->value;
 	}else{
 		return -1;
 	}
+	delete rec;
 }
 
 int main(){
@@ -99,7 +99,7 @@ int main(){
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,ref(tq[i]),ref(root[i]),ref(writerRouter));
+		workerThread[i] = thread(run,i,&activeThreads,ref(tq),ref(root[i]),ref(writerRouter));
 		workerThread[i].detach();
 	}
 	this_thread::sleep_for (std::chrono::milliseconds(1000));
@@ -133,7 +133,9 @@ int main(){
 
 	Clock::time_point t1 = Clock::now();
 	//printf("All thread finished in: %f\n", sec(t1-t0).count());
-	
+
+	delete[] tq;
+	delete[] writerRouter;
 	return 0;	
 
 }

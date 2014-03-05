@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "gc.h"
 #ifdef WINDOWS
 #define bool char
 #define false 0

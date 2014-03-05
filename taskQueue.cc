@@ -23,6 +23,10 @@ class taskQueue{
 			consumerIdx=0;
 			taskArr=new task[ARRAY_LENGTH];
 		} 
+		~taskQueue()
+		{
+			delete[] taskArr;
+		} 
 		/*taskQueue(taskQueue&&) {}
 		taskQueue& operator=(taskQueue&&) {}
 

@@ -21,5 +21,5 @@ using namespace std;
 
 //void setTaskQueue(taskQueue *itq);
 
-void run(int id,std::atomic<int> *activeThreads,taskQueue &itq, node *&root, int *&writerRouter);
+void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter);
 

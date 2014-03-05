@@ -1,4 +1,4 @@
-overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o 
+overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o
 	g++ -O2 -pthread -o $@ $^ 
 
 overseer.o: overseer.cc
@@ -12,6 +12,9 @@ task.o: task.cc
 
 worker.o: worker.cc
 	g++ -std=gnu++0x -O2 -c worker.cc 
+
+gc.o: gc.c
+	gcc -O2 -c gc.c
 
 nomap: nomap.cc
 	g++ -Wall -O3 -fPIC -shared -pthread -o $@ nomap.cc
