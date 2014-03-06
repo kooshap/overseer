@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <time.h>
 #include "gc.h"
 
 struct garbage_item *garbage_head = NULL;
@@ -8,41 +9,8 @@ struct garbage_item *candidate_curr = NULL;
 
 pthread_mutex_t swap_mutex;
 
-struct garbage_item* create_garbage_list(void *victim)
-{
-	//printf("\n creating list with headnode as [%d]\n",victim);
-	struct garbage_item *ptr = (struct garbage_item*)malloc(sizeof(struct garbage_item));
-	if(NULL == ptr)
-	{
-		//printf("\n Node creation failed \n");
-		return NULL;
-	}
-	ptr->victim = victim;
-	ptr->next = NULL;
-	
-	pthread_mutex_lock(&swap_mutex);
-
-	candidate_head = candidate_curr = ptr;
-
-	pthread_mutex_unlock(&swap_mutex);
-	
-	return ptr;
-}
-
 struct garbage_item* add_garbage(void *victim, bool add_to_end)
 {
-	if(NULL == candidate_head)
-	{
-		return (create_garbage_list(victim));
-	}
-
-	if(add_to_end) {
-		//printf("\n Adding node to end of list with victimue [%d]\n",victim);
-	}
-	else {
-		//printf("\n Adding node to beginning of list with value [%d]\n",victim);
-	}
-
 	struct garbage_item *ptr = (struct garbage_item*)malloc(sizeof(struct garbage_item));
 	if(NULL == ptr)
 	{
@@ -52,22 +20,20 @@ struct garbage_item* add_garbage(void *victim, bool add_to_end)
 	ptr->victim = victim;
 	ptr->next = NULL;
 
-	if(add_to_end)
-	{
-		pthread_mutex_lock(&swap_mutex);
+	pthread_mutex_lock(&swap_mutex);
 
-		candidate_curr->next = ptr;
-		candidate_curr = ptr;
-		
-		pthread_mutex_unlock(&swap_mutex);
-	
-		empty_garbage();
-	}
+	if(NULL == candidate_head)
+	{
+		candidate_head = candidate_curr = ptr;
+	}	
 	else
 	{
-		ptr->next = candidate_head;
-		candidate_head = ptr;
+		candidate_curr->next = ptr;
+		candidate_curr = ptr;
 	}
+	
+	pthread_mutex_unlock(&swap_mutex);
+
 	return ptr;
 }
 
@@ -105,14 +71,10 @@ struct garbage_item* search_in_list(void *victim, struct garbage_item **prev)
 	}
 }
 
-// Added by Koosha
 // Sqaps the garbage list and the candidate list
 void swap_lists()
 {
 	struct garbage_item *tmp = NULL;
-
-	// Lock the lists
-	pthread_mutex_lock(&swap_mutex);
 
 	tmp = candidate_head;
 	candidate_head = garbage_head;
@@ -121,42 +83,50 @@ void swap_lists()
 	tmp = candidate_curr;
 	candidate_curr = garbage_curr;
 	garbage_curr = tmp;
-
-	// Unlock the lists
-	pthread_mutex_unlock(&swap_mutex);
 }
 
-// Added by Koosha
 // empties the garbage list
 void empty_garbage()
 {
-	struct garbage_item *ptr = NULL;
-	struct garbage_item *tmp = NULL;
-
-	// get the lock	
-	pthread_mutex_lock(&swap_mutex);
+	struct garbage_item *ptr;
+	struct garbage_item *tmp;
 	
-	ptr = garbage_head;
-	// empty the garbage list
-	while (ptr != NULL)
-	{
-		// free the garbage object
-		//printf("Free %p %p\n", ptr->victim, ptr);
-		free(ptr->victim);
-		ptr->victim = NULL;
-		tmp = ptr;
-		ptr = ptr->next;
-		// free the linkedList object
-		free(tmp);
+	struct timespec tim, tim2;
+	tim.tv_sec = 0;
+	tim.tv_nsec = 1000000L;
+
+	while (1) {
+		ptr = NULL;
 		tmp = NULL;
-	}
-	garbage_curr = NULL;
-	garbage_head = NULL;	
 
-	// release the lock
-	pthread_mutex_unlock(&swap_mutex);
-	
-	swap_lists();
+		nanosleep(&tim , &tim2);
+		
+		// get the lock	
+		pthread_mutex_lock(&swap_mutex);
+
+		ptr = garbage_head;
+		
+		// empty the garbage list
+		while (ptr != NULL)
+		{
+			// free the garbage object
+			//printf("Free %p %p\n", ptr->victim, ptr);
+			free(ptr->victim);
+			ptr->victim = NULL;
+			tmp = ptr;
+			ptr = ptr->next;
+			// free the linkedList object
+			free(tmp);
+			tmp = NULL;
+		}
+		garbage_curr = NULL;
+		garbage_head = NULL;	
+		
+		swap_lists();
+
+		// release the lock
+		pthread_mutex_unlock(&swap_mutex);
+	}
 }
 
 int delete_from_list(void *victim)

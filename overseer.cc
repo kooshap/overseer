@@ -8,8 +8,8 @@
 #include <math.h>
 #include "worker.h"
 
-const int NREAD=100;
-const int MAXKEY=100;
+const int NREAD=5000;
+const int MAXKEY=5000;
 const int NUM_OF_WORKER=2;
 
 using namespace std;
@@ -97,6 +97,11 @@ int main(){
 
 	//printf("write queue filled\n");
 
+	// Start the garbage collector
+	thread gcThread = thread(empty_garbage);
+	gcThread.detach();
+
+
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		workerThread[i] = thread(run,i,&activeThreads,ref(tq),ref(root[i]),ref(writerRouter));
@@ -133,6 +138,9 @@ int main(){
 
 	Clock::time_point t1 = Clock::now();
 	//printf("All thread finished in: %f\n", sec(t1-t0).count());
+
+	// Terminate the garbage collector thread
+	gcThread.~thread();
 
 	delete[] tq;
 	delete[] writerRouter;
