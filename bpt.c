@@ -588,8 +588,10 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 		new_leaf->num_keys++;
 	}
 
-	free(temp_pointers);
-	free(temp_keys);
+	//free(temp_pointers);
+	//free(temp_keys);
+	add_garbage(temp_pointers);
+	add_garbage(temp_keys);
 
 	new_leaf->pointers[order - 1] = leaf->pointers[order - 1];
 	leaf->pointers[order - 1] = new_leaf;
@@ -690,8 +692,11 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 		new_node->num_keys++;
 	}
 	new_node->pointers[j] = temp_pointers[i];
-	free(temp_pointers);
-	free(temp_keys);
+	//free(temp_pointers);
+	//free(temp_keys);
+	add_garbage(temp_pointers);
+	add_garbage(temp_keys);
+
 	new_node->parent = old_node->parent;
 	for (i = 0; i <= new_node->num_keys; i++) {
 		child = new_node->pointers[i];
@@ -935,9 +940,12 @@ node * adjust_root(node * root) {
 	else
 		new_root = NULL;
 
-	free(root->keys);
-	free(root->pointers);
-	free(root);
+	//free(root->keys);
+	//free(root->pointers);
+	//free(root);
+	add_garbage(root->keys);
+	add_garbage(root->pointers);
+	add_garbage(root);
 
 	return new_root;
 }
@@ -1068,9 +1076,12 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 
 	if (!split) {
 		root = delete_entry(root, n->parent, k_prime, n);
-		free(n->keys);
-		free(n->pointers);
-		free(n); 
+		//free(n->keys);
+		//free(n->pointers);
+		//free(n); 
+		add_garbage(n->keys);
+		add_garbage(n->pointers);
+		add_garbage(n);
 	}
 	else
 		for (i = 0; i < n->parent->num_keys; i++)
@@ -1248,8 +1259,7 @@ node * bptdelete(node * root, int key) {
 	if (key_record != NULL && key_leaf != NULL) {
 		root = delete_entry(root, key_leaf, key, key_record);
 		//free(key_record);
-		// Added by Koosha
-		add_garbage(key_record,true);
+		add_garbage(key_record);
 	}
 	return root;
 }
@@ -1258,14 +1268,19 @@ node * bptdelete(node * root, int key) {
 void destroy_tree_nodes(node * root) {
 	int i;
 	if (root->is_leaf)
-		for (i = 0; i < root->num_keys; i++)
-			free(root->pointers[i]);
+		for (i = 0; i < root->num_keys; i++) {
+			//free(root->pointers[i]);
+			add_garbage(root->pointers[i]);
+		}			
 	else
 		for (i = 0; i < root->num_keys + 1; i++)
 			destroy_tree_nodes(root->pointers[i]);
-	free(root->pointers);
-	free(root->keys);
-	free(root);
+	//free(root->pointers);
+	//free(root->keys);
+	//free(root);
+	add_garbage(root->pointers);
+	add_garbage(root->keys);
+	add_garbage(root);
 }
 
 

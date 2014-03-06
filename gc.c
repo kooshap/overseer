@@ -9,7 +9,7 @@ struct garbage_item *candidate_curr = NULL;
 
 pthread_mutex_t swap_mutex;
 
-struct garbage_item* add_garbage(void *victim, bool add_to_end)
+struct garbage_item* add_garbage(void *victim)
 {
 	struct garbage_item *ptr = (struct garbage_item*)malloc(sizeof(struct garbage_item));
 	if(NULL == ptr)
@@ -111,6 +111,7 @@ void empty_garbage()
 		{
 			// free the garbage object
 			//printf("Free %p %p\n", ptr->victim, ptr);
+			//printf(".");
 			free(ptr->victim);
 			ptr->victim = NULL;
 			tmp = ptr;

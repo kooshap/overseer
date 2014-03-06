@@ -8,7 +8,7 @@ struct garbage_item
 	struct garbage_item *next;
 };
 
-struct garbage_item* add_garbage(void *victim, bool add_to_end);
+struct garbage_item* add_garbage(void *victim);
 
 void empty_garbage();
 
