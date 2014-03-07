@@ -2,6 +2,10 @@
 #include <time.h>
 #include "gc.h"
 
+// The id of the last read operation for every reading thread
+// Used by the garbage collector to check which objects are safe to delete
+unsigned long long last_reader_version[MAX_READERS];
+
 struct garbage_item *garbage_head = NULL;
 struct garbage_item *garbage_curr = NULL;
 struct garbage_item *candidate_head = NULL;
@@ -9,7 +13,7 @@ struct garbage_item *candidate_curr = NULL;
 
 pthread_mutex_t swap_mutex;
 
-struct garbage_item* add_garbage(void *victim)
+struct garbage_item* add_garbage(void *victim, unsigned long long curr_version)
 {
 	struct garbage_item *ptr = (struct garbage_item*)malloc(sizeof(struct garbage_item));
 	if(NULL == ptr)
@@ -18,6 +22,7 @@ struct garbage_item* add_garbage(void *victim)
 		return NULL;
 	}
 	ptr->victim = victim;
+	ptr->version = curr_version;
 	ptr->next = NULL;
 
 	pthread_mutex_lock(&swap_mutex);
@@ -85,12 +90,41 @@ void swap_lists()
 	garbage_curr = tmp;
 }
 
+// Initialize the last_reader_version array to -1
+void init_last_read_versions() 
+{
+	int i;
+	for (i=0;i<MAX_READERS;i++) {
+		last_reader_version[i]=0;
+	}
+}
+
+// Returns the minimum value in the last_reader_version array
+unsigned long long get_min_version() 
+{
+	unsigned long long min_version = last_reader_version[0];
+	int i;
+	for (i=1;i<MAX_READERS;i++) {
+		if (last_reader_version[i]==0) {
+			break;
+		}
+		if (min_version<last_reader_version[i]) {
+			min_version = last_reader_version[i];
+		}
+	}
+	return min_version;
+}
+
 // empties the garbage list
 void empty_garbage()
 {
 	struct garbage_item *ptr;
 	struct garbage_item *tmp;
-	
+
+	unsigned long long min_version = 0;
+
+	init_last_read_versions();
+
 	struct timespec tim, tim2;
 	tim.tv_sec = 0;
 	tim.tv_nsec = 1000000L;
@@ -99,29 +133,51 @@ void empty_garbage()
 		ptr = NULL;
 		tmp = NULL;
 
+		// Sleep 
 		nanosleep(&tim , &tim2);
-		
+	
+		// Get the minimum version among the completed reads	
+		min_version = get_min_version();
+		//printf("Min version: %llu\n", min_version);
+
 		// get the lock	
 		pthread_mutex_lock(&swap_mutex);
 
 		ptr = garbage_head;
-		
+				
 		// empty the garbage list
 		while (ptr != NULL)
 		{
 			// free the garbage object
 			//printf("Free %p %p\n", ptr->victim, ptr);
+
 			//printf(".");
+			if (ptr->next==NULL) {
+				garbage_curr=ptr;
+			}
+
+			if (ptr->version>min_version) {
+				ptr = ptr->next;
+				continue;
+			}
+			
 			free(ptr->victim);
 			ptr->victim = NULL;
+
 			tmp = ptr;
 			ptr = ptr->next;
+			// Move the head pointer forward if the first item is deleted
+			if (garbage_head==tmp) {
+				garbage_head=ptr;
+			}
 			// free the linkedList object
 			free(tmp);
 			tmp = NULL;
 		}
-		garbage_curr = NULL;
-		garbage_head = NULL;	
+		// If the list is empty
+		if (garbage_head==NULL) {	
+			garbage_curr = NULL;
+		}
 		
 		swap_lists();
 

@@ -1,7 +1,7 @@
 overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o
 	g++ -O2 -pthread -o $@ $^ 
 
-overseer.o: overseer.cc
+overseer.o: overseer.cc worker.h
 	g++ -std=gnu++0x -O2 -c overseer.cc 
 
 taskQueue.o: taskQueue.cc
@@ -10,10 +10,10 @@ taskQueue.o: taskQueue.cc
 task.o: task.cc
 	g++ -std=gnu++0x -O2 -c task.cc 
 
-worker.o: worker.cc
+worker.o: worker.cc worker.h bpt.h
 	g++ -std=gnu++0x -O2 -c worker.cc 
 
-gc.o: gc.c
+gc.o: gc.c gc.h
 	gcc -O2 -c gc.c
 
 nomap: nomap.cc
@@ -28,8 +28,8 @@ bptree.so: bptree.cc
 bptree64.o: bptree.cc
 	g++ -O3 -m64 -L/usr/lib64 -c -o $@ bptree.cc
 
-bpt.o: bpt.c
-	gcc -O2 -c -o $@ bpt.c
+bpt.o: bpt.c bpt.h gc.h
+	gcc -O2 -c bpt.c
 
 .PHONY: clean
 clean:

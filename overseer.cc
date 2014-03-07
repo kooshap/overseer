@@ -71,7 +71,7 @@ void worker_exit(int id) {
 
 int overseer_read(int k,node *root){
 	record *rec=new record();
-	rec=find(root,k,false);
+	rec=find(root,k,0);
 	if (rec){
 		return rec->value;
 	}else{

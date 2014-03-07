@@ -74,6 +74,55 @@ node * queue = NULL;
  */
 bool verbose_output = false;
 
+// Global reader version is read by every thread at the beginning of 
+// a read operation, and is passed with every object that goes
+// to the garbage collector. Therefore, the garbage collector can
+// check the version seen by the last completed read operation 
+// for every thread, and free the objects that belong to older versions. 
+unsigned long long global_version = 1;
+
+// FUNCTION PROTOTYPES.
+
+// Output and utility.
+
+void enqueue( node * new_node );
+node * dequeue( void );
+int height( node * root );
+int path_to_root( node * root, node * child );
+void print_leaves( node * root );
+void print_tree( node * root );
+void find_and_print(node * root, int key, bool verbose); 
+void find_and_print_range(node * root, int range1, int range2, bool verbose); 
+int find_range( node * root, int key_start, int key_end, bool verbose,
+		int returned_keys[], void * returned_pointers[]); 
+node * find_leaf( node * root, int key, bool verbose );
+int cut( int length );
+
+// Insertion.
+
+record * make_record(int value);
+node * make_node( void );
+node * make_leaf( void );
+int get_left_index(node * parent, node * left);
+node * insert_into_leaf( node * leaf, int key, record * pointer );
+node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, record * pointer);
+node * insert_into_node(node * root, node * parent, 
+		int left_index, int key, node * right);
+node * insert_into_node_after_splitting(node * root, node * parent, int left_index, 
+		int key, node * right);
+node * insert_into_parent(node * root, node * left, int key, node * right);
+node * insert_into_new_root(node * left, int key, node * right);
+node * start_new_tree(int key, record * pointer);
+
+// Deletion.
+
+int get_neighbor_index( node * n );
+node * adjust_root(node * root);
+node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime);
+node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
+		int k_prime_index, int k_prime);
+node * delete_entry( node * root, node * n, int key, void * pointer );
+
 
 // FUNCTION DEFINITIONS.
 
@@ -226,7 +275,7 @@ void print_tree( node * root ) {
  * appropriate message to stdout.
  */
 void find_and_print(node * root, int key, bool verbose) {
-	record * r = find(root, key, verbose);
+	record * r = find(root, key, -1);
 	if (r == NULL)
 		printf("Record not found under key %d.\n", key);
 	else 
@@ -391,16 +440,29 @@ node * find_right_most_leaf( node * root, bool verbose ) {
 /* Finds and returns the record to which
  * a key refers.
  */
-record * find( node * root, int key, bool verbose ) {
+record * find( node * root, int key, int thread_id ) {
+	// Get the current version
+	long long reader_version = global_version;
+
 	int i = 0;
-	node * c = find_leaf( root, key, verbose );
+	node * c = find_leaf( root, key, false );
 	if (c == NULL) return NULL;
 	for (i = 0; i < c->num_keys; i++)
 		if (c->keys[i] == key) break;
-	if (i == c->num_keys) 
+	if (i == c->num_keys) { 
+		// update the last worked version for this thread
+		if (thread_id>=0) {	
+			last_reader_version[thread_id]=reader_version;
+		}
 		return NULL;
-	else
+	}
+	else {
+		// update the last worked version for this thread
+		if (thread_id>=0) {	
+			last_reader_version[thread_id]=reader_version;
+		}
 		return (record *)c->pointers[i];
+	}
 }
 
 
@@ -590,9 +652,10 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 
 	//free(temp_pointers);
 	//free(temp_keys);
-	add_garbage(temp_pointers);
-	add_garbage(temp_keys);
-
+	add_garbage(temp_pointers,global_version);
+	add_garbage(temp_keys,global_version);
+	++global_version;
+	
 	new_leaf->pointers[order - 1] = leaf->pointers[order - 1];
 	leaf->pointers[order - 1] = new_leaf;
 
@@ -694,8 +757,9 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 	new_node->pointers[j] = temp_pointers[i];
 	//free(temp_pointers);
 	//free(temp_keys);
-	add_garbage(temp_pointers);
-	add_garbage(temp_keys);
+	add_garbage(temp_pointers,global_version);
+	add_garbage(temp_keys,global_version);
+	++global_version;
 
 	new_node->parent = old_node->parent;
 	for (i = 0; i <= new_node->num_keys; i++) {
@@ -803,7 +867,7 @@ node * bptinsert( node * root, int key, int value ) {
 	 * duplicates.
 	 */
 
-	if (find(root, key, false) != NULL)
+	if (find(root, key, -1) != NULL)
 		return root;
 
 	/* Create a new record for the
@@ -943,9 +1007,10 @@ node * adjust_root(node * root) {
 	//free(root->keys);
 	//free(root->pointers);
 	//free(root);
-	add_garbage(root->keys);
-	add_garbage(root->pointers);
-	add_garbage(root);
+	add_garbage(root->keys,global_version);
+	add_garbage(root->pointers,global_version);
+	add_garbage(root,global_version);
+	++global_version;
 
 	return new_root;
 }
@@ -1079,9 +1144,10 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 		//free(n->keys);
 		//free(n->pointers);
 		//free(n); 
-		add_garbage(n->keys);
-		add_garbage(n->pointers);
-		add_garbage(n);
+		add_garbage(n->keys,global_version);
+		add_garbage(n->pointers,global_version);
+		add_garbage(n,global_version);
+		++global_version;
 	}
 	else
 		for (i = 0; i < n->parent->num_keys; i++)
@@ -1254,12 +1320,13 @@ node * bptdelete(node * root, int key) {
 	node * key_leaf;
 	record * key_record;
 
-	key_record = find(root, key, false);
+	key_record = find(root, key, -1);
 	key_leaf = find_leaf(root, key, false);
 	if (key_record != NULL && key_leaf != NULL) {
 		root = delete_entry(root, key_leaf, key, key_record);
 		//free(key_record);
-		add_garbage(key_record);
+		add_garbage(key_record,global_version);
+		++global_version;
 	}
 	return root;
 }
@@ -1270,7 +1337,8 @@ void destroy_tree_nodes(node * root) {
 	if (root->is_leaf)
 		for (i = 0; i < root->num_keys; i++) {
 			//free(root->pointers[i]);
-			add_garbage(root->pointers[i]);
+			add_garbage(root->pointers[i],global_version);
+			++global_version;
 		}			
 	else
 		for (i = 0; i < root->num_keys + 1; i++)
@@ -1278,9 +1346,10 @@ void destroy_tree_nodes(node * root) {
 	//free(root->pointers);
 	//free(root->keys);
 	//free(root);
-	add_garbage(root->pointers);
-	add_garbage(root->keys);
-	add_garbage(root);
+	add_garbage(root->pointers,global_version);
+	add_garbage(root->keys,global_version);
+	add_garbage(root,global_version);
+	++global_version;
 }
 
 
@@ -1288,5 +1357,4 @@ node * destroy_tree(node * root) {
 	destroy_tree_nodes(root);
 	return NULL;
 }
-
 
