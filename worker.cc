@@ -33,6 +33,16 @@ int worker_delete(node *&root,int k){
 	return 0;
 }
 
+void perform_load_balancing_if_needed(int id, int &completed_tasks) 
+{
+	completed_tasks++;
+	if (completed_tasks<OFFLOAD_FREQ)
+		return;
+	completed_tasks=0;
+
+	task_completed(id);	
+}
+
 void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter){
 	string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
@@ -40,7 +50,8 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 	int rightMostKey=-1;
 
 	Clock::time_point t0 = Clock::now();
-	
+
+	int completed_tasks=0;
 	task t=itq[id].get();
 	
 	while (t.opCode!=EXIT_OP) {
@@ -76,6 +87,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 				//this_thread::sleep_for (std::chrono::milliseconds(10));
 
 		}
+		perform_load_balancing_if_needed(id,completed_tasks);
 		t=itq[id].get();
 	}
 	if (root) {

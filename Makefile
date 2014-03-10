@@ -1,4 +1,4 @@
-overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o
+overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o statistics.o
 	g++ -O2 -pthread -o $@ $^ 
 
 overseer.o: overseer.cc worker.h
@@ -15,6 +15,9 @@ worker.o: worker.cc worker.h bpt.h
 
 gc.o: gc.c gc.h
 	gcc -O2 -c gc.c
+
+statistics.o: statistics.c statistics.h
+	gcc -O2 -c statistics.c
 
 nomap: nomap.cc
 	g++ -Wall -O3 -fPIC -shared -pthread -o $@ nomap.cc
@@ -33,6 +36,6 @@ bpt.o: bpt.c bpt.h gc.h
 
 .PHONY: clean
 clean:
-	-rm -f overseer.o taskQueue.o task.o worker.o bpt*.o overseer
+	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o bpt*.o overseer
 	
 

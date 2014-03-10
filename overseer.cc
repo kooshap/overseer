@@ -97,6 +97,9 @@ int main(){
 
 	//printf("write queue filled\n");
 
+	// Start the worker stats
+	init_stats(NUM_OF_WORKER);
+
 	// Start the garbage collector
 	thread gcThread = thread(empty_garbage);
 	gcThread.detach();
@@ -142,6 +145,12 @@ int main(){
 	// Terminate the garbage collector thread
 	gcThread.~thread();
 
+	// Stop the worker stats
+	stop_stats();
+
+	// Wait for GC and Stats to end
+	this_thread::sleep_for (std::chrono::milliseconds(500));
+	
 	delete[] tq;
 	delete[] writerRouter;
 	return 0;	

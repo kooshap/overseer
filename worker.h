@@ -11,6 +11,9 @@
 extern "C"{
 #include "bpt.h"
 }
+extern "C"{
+#include "statistics.h"
+}
 
 using namespace std;
 //int randomKey();
