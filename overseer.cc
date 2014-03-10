@@ -6,11 +6,11 @@
 #include <thread>
 #include <atomic>
 #include <math.h>
+#include "overseer.h"
 #include "worker.h"
 
 const int NREAD=5000;
 const int MAXKEY=5000;
-const int NUM_OF_WORKER=2;
 
 using namespace std;
 

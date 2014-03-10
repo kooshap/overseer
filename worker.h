@@ -13,6 +13,7 @@ extern "C"{
 }
 extern "C"{
 #include "statistics.h"
+#include "offloading_policy.h"
 }
 
 using namespace std;

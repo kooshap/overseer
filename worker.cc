@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include "worker.h"
+#include "overseer.h"
 
 using namespace std;
 
@@ -41,6 +42,7 @@ void perform_load_balancing_if_needed(int id, int &completed_tasks)
 	completed_tasks=0;
 
 	task_completed(id);	
+	printf("Need to push: %d\n",need_to_push(id,NUM_OF_WORKER));
 }
 
 void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter){

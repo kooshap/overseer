@@ -1,7 +1,7 @@
-overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o statistics.o
+overseer: overseer.o worker.o task.o taskQueue.o bptree64.o bpt.o gc.o statistics.o offloading_policy.o
 	g++ -O2 -pthread -o $@ $^ 
 
-overseer.o: overseer.cc worker.h
+overseer.o: overseer.cc overseer.h worker.h
 	g++ -std=gnu++0x -O2 -c overseer.cc 
 
 taskQueue.o: taskQueue.cc
@@ -18,6 +18,9 @@ gc.o: gc.c gc.h
 
 statistics.o: statistics.c statistics.h
 	gcc -O2 -c statistics.c
+
+offloading_policy.o: offloading_policy.c 
+	gcc -O2 -c offloading_policy.c
 
 nomap: nomap.cc
 	g++ -Wall -O3 -fPIC -shared -pthread -o $@ nomap.cc
