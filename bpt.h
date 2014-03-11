@@ -82,6 +82,8 @@ typedef struct node {
 record * find( node * root, int key, int thread_id );
 record * find_smallest_key( node * root, bool verbose );
 record * find_biggest_key( node * root, bool verbose );
+record **get_left_most_leaf( node * root, bool verbose );
+record **get_right_most_leaf( node * root, bool verbose );
 
 // Insertion.
 

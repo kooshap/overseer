@@ -16,7 +16,7 @@ struct task {
 	opCodeType opCode;
 	int offloader_id;
 	int victim_id;
-
+	task *chunk;
 	/*
 	task(){
 		//key=0;
