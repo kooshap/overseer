@@ -10,7 +10,7 @@ taskQueue.o: taskQueue.cc
 task.o: task.cc
 	g++ -std=gnu++0x -O2 -c task.cc 
 
-worker.o: worker.cc worker.h bpt.h
+worker.o: worker.cc worker.h bpt.h task.cc taskQueue.cc	statistics.h offloading_policy.h overseer.h
 	g++ -std=gnu++0x -O2 -c worker.cc 
 
 gc.o: gc.c gc.h
@@ -39,6 +39,6 @@ bpt.o: bpt.c bpt.h gc.h
 
 .PHONY: clean
 clean:
-	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o bpt*.o overseer
+	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o offloading_policy.o bpt*.o overseer
 	
 

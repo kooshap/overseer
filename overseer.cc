@@ -17,7 +17,6 @@ using namespace std;
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 
-taskQueue *tq=new taskQueue[NUM_OF_WORKER];
 string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 int *writerRouter=new int[NUM_OF_WORKER];
 
@@ -56,15 +55,13 @@ void overseer_write(int key,string val) {
 void overseer_delete(int key) {
 	task t;
 	t.key=key;
-	t.value.clear();
+	//t->value.clear();
 	t.opCode=DELETE_OP;
 	routeTask(t);
 } 
 
 void worker_exit(int id) {
 	task t;
-	t.key=0;
-	t.value.clear();
 	t.opCode=EXIT_OP;
 	tq[id].put(t);
 }

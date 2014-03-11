@@ -1,21 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <random>
-#include <chrono>
-#include <thread>
-#include <atomic>
 #include "worker.h"
 #include "overseer.h"
 
-using namespace std;
 
 typedef minstd_rand G;
 typedef uniform_int_distribution<> D;
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
+
+taskQueue *tq=new taskQueue[NUM_OF_WORKER];
+
+// Offloading locks
+mutex offload_mutex[NUM_OF_WORKER-1];
 
 int worker_write(node *&root,int k, int v){
 	if (root) {
@@ -42,7 +37,26 @@ void perform_load_balancing_if_needed(int id, int &completed_tasks)
 	completed_tasks=0;
 
 	task_completed(id);	
-	printf("Need to push: %d\n",need_to_push(id,NUM_OF_WORKER));
+	int offset=need_to_push(id,NUM_OF_WORKER);
+	// If it needs to offlaod to a neighbor
+	if (offset) {
+		// Mutex id is for worker #n is:
+		// n-1: if we push to the left neighbor
+		// n: if we push to the right neighbor
+		int mutex_id=(offset>0)?id:id-1;
+		// Try to acquire the lock
+		if (!offload_mutex[mutex_id].try_lock()) {
+			// Abort if another offload operation is taking place
+			return;
+		}
+
+		//tq[id+offset].put();
+	}
+}
+
+void release_offload_lock(int id,int victim_id)
+{
+	offload_mutex[(id<victim_id)?id:victim_id].unlock();
 }
 
 void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter){
@@ -54,7 +68,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 	Clock::time_point t0 = Clock::now();
 
 	int completed_tasks=0;
-	task t=itq[id].get();
+	task t=tq[id].get();
 	
 	while (t.opCode!=EXIT_OP) {
 		switch (t.opCode) {
@@ -81,7 +95,8 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 				break;
 			case REMOVE_CHUNK_OP:
 				if (!worker_delete(root,t.key)) {
-					// TODO release offload lock
+					printf("Unknown opCode\n");
+					release_offload_lock(id,0);
 				}
 				break;
 			default:
@@ -90,7 +105,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 
 		}
 		perform_load_balancing_if_needed(id,completed_tasks);
-		t=itq[id].get();
+		t=tq[id].get();
 	}
 	if (root) {
 		destroy_tree(root);

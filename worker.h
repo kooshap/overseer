@@ -6,7 +6,8 @@
 #include <random>
 #include <chrono>
 #include <atomic>
-#include "server.h"
+#include <thread>
+//#include "server.h"
 #include "taskQueue.cc"
 extern "C"{
 #include "bpt.h"
@@ -17,6 +18,9 @@ extern "C"{
 }
 
 using namespace std;
+
+extern taskQueue *tq;
+
 //int randomKey();
 
 //int write(int k, string v,IdxState *myIdxs);
