@@ -20,6 +20,9 @@ extern "C"{
 using namespace std;
 
 extern taskQueue *tq;
+extern int *write_router;
+extern int *read_router;
+extern node **root;
 
 //int randomKey();
 
@@ -29,5 +32,5 @@ extern taskQueue *tq;
 
 //void setTaskQueue(taskQueue *itq);
 
-void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter);
+void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq);
 

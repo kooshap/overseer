@@ -18,7 +18,6 @@ typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 
 string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
-int *writerRouter=new int[NUM_OF_WORKER];
 
 int binarySearch(int *arr,int key,int minIdx,int maxIdx){
 	if (arr[maxIdx]<= key)
@@ -41,7 +40,7 @@ bool belongTo(int workerNum, int key, int *arr) {
 }
 
 void routeTask(task t) {
-	tq[findContainer(t.key, writerRouter)].put(t);
+	tq[findContainer(t.key, write_router)].put(t);
 }
 
 void overseer_write(int key,string val) {
@@ -80,12 +79,11 @@ int overseer_read(int k,node *root){
 int main(){
 	std::atomic<int> activeThreads;
 	activeThreads=NUM_OF_WORKER;
-	node *root[NUM_OF_WORKER]={0};
 	thread workerThread[NUM_OF_WORKER];
 	
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		writerRouter[i]=round(MAXKEY/NUM_OF_WORKER)*i;
-		printf("writerRouter[%d]=%d\n",i,writerRouter[i]);
+		write_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
+		printf("write_router[%d]=%d\n",i,write_router[i]);
 	}
 
 	for (int i=0;i<MAXKEY;i++){
@@ -104,15 +102,15 @@ int main(){
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,ref(tq),ref(root[i]),ref(writerRouter));
+		workerThread[i] = thread(run,i,&activeThreads,ref(tq));
 		workerThread[i].detach();
 	}
 	this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	int missCount=0;
 	for (int i=0;i<NREAD;i++){
-		//printf("findContainer(%d)=%d\n",i,findContainer(i,writerRouter));
-		int result=overseer_read(i,root[findContainer(i,writerRouter)]);
+		//printf("findContainer(%d)=%d\n",i,findContainer(i,write_router));
+		int result=overseer_read(i,root[findContainer(i,read_router)]);
 		if (result!=-1) {
 			//printf("%d, %d\n",i,result);
 		}
@@ -148,8 +146,9 @@ int main(){
 	// Wait for GC and Stats to end
 	this_thread::sleep_for (std::chrono::milliseconds(500));
 	
+	free(root);	
 	delete[] tq;
-	delete[] writerRouter;
+	delete[] write_router;
 	return 0;	
 
 }
