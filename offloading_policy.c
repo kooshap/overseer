@@ -1,6 +1,6 @@
 #include "offloading_policy.h"
 
-const float ratio_threshold=2;
+const float ratio_threshold=1.01;
 
 int need_to_push(int worker_id,int num_workers)
 {

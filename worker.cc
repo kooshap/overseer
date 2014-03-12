@@ -29,7 +29,7 @@ int worker_delete(node *&root,int k){
 	return 0;
 }
 
-void perform_load_balancing_if_needed(int id, int &completed_tasks) 
+void perform_load_balancing_if_needed(int id, int &completed_tasks, node *&root) 
 {
 	completed_tasks++;
 	if (completed_tasks<OFFLOAD_FREQ)
@@ -49,14 +49,56 @@ void perform_load_balancing_if_needed(int id, int &completed_tasks)
 			// Abort if another offload operation is taking place
 			return;
 		}
-
-		//tq[id+offset].put();
+		task t;
+		t.opCode=PUSH_CHUNK_OP;
+		t.offloader_id=id;
+		t.victim_id=id+offset;
+		chunk * offchunk;
+		if (offset<0) {
+			offchunk=(chunk *)get_left_most_leaf(root,false);
+		} else {
+			offchunk=(chunk *)get_right_most_leaf(root,false);
+		}		
+		t.offload_chunk=offchunk;
+		/*
+		int i=0;
+		while (offchunk->value[i]!=NULL) {
+			printf("%d/%d ",offchunk->key[i], offchunk->value[i]->value);
+			i++;
+		}
+		printf("\n");
+		*/
+		tq[id+offset].put(t);
 	}
 }
 
-void release_offload_lock(int id,int victim_id)
+void push_chunk(task t,node *root)
 {
-	offload_mutex[(id<victim_id)?id:victim_id].unlock();
+	chunk *offload_chunk=(chunk *)t.offload_chunk;
+	int i=0;
+	while (offload_chunk->value[i]!=NULL)
+	{
+		worker_write(root,offload_chunk->key[i],offload_chunk->value[i]->value);
+		printf("Pushed %d/%d \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		i++;
+	}
+}
+
+void remove_chunk(task t,node *root)
+{
+	chunk *offload_chunk=(chunk *)t.offload_chunk;
+	int i=0;
+	while (offload_chunk->value[i]!=NULL)
+	{
+		worker_delete(root,offload_chunk->key[i]);
+		printf("Removed %d/%d \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		i++;
+	}
+}
+
+void release_offload_lock(int offloader_id,int victim_id)
+{
+	offload_mutex[(offloader_id<victim_id)?offloader_id:victim_id].unlock();
 }
 
 void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, int *&writerRouter){
@@ -88,23 +130,22 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq, node *&root, in
 				}
 				break;
 			case PUSH_CHUNK_OP:
-				worker_write(root,t.key, t.key);
-				writerRouter[id+1]+=1;
-				printf("writerRouter[%d]=%d\n", id+1, writerRouter[id+1]);
+				printf("PUSH Chunk from node %d\n",t.offloader_id);
+				push_chunk(t,root);
 				// TODO update router, put REMOVE_CHUNK_OP in neighbors taskQueue
+				t.opCode=REMOVE_CHUNK_OP;
+				tq[t.offloader_id].put(t);
 				break;
 			case REMOVE_CHUNK_OP:
-				if (!worker_delete(root,t.key)) {
-					printf("Unknown opCode\n");
-					release_offload_lock(id,0);
-				}
+				remove_chunk(t,root);
+				release_offload_lock(t.offloader_id,t.victim_id);
 				break;
 			default:
 				printf("Unknown opCode\n",id,t.key);
 				//this_thread::sleep_for (std::chrono::milliseconds(10));
 
 		}
-		perform_load_balancing_if_needed(id,completed_tasks);
+		perform_load_balancing_if_needed(id,completed_tasks,root);
 		t=tq[id].get();
 	}
 	if (root) {

@@ -38,6 +38,11 @@ typedef struct record {
 	int value;
 } record;
 
+typedef struct chunk {
+	int *key;
+	record **value;
+} chunk;
+
 /* Type representing a node in the B+ tree.
  * This type is general enough to serve for both
  * the leaf and the internal node.
@@ -82,8 +87,8 @@ typedef struct node {
 record * find( node * root, int key, int thread_id );
 record * find_smallest_key( node * root, bool verbose );
 record * find_biggest_key( node * root, bool verbose );
-record **get_left_most_leaf( node * root, bool verbose );
-record **get_right_most_leaf( node * root, bool verbose );
+chunk *get_left_most_leaf( node * root, bool verbose );
+chunk *get_right_most_leaf( node * root, bool verbose );
 
 // Insertion.
 

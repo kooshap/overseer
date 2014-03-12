@@ -440,43 +440,51 @@ node * find_right_most_leaf( node * root, bool verbose ) {
 /* Returns the records of the leftmost node 
  * Added by Koosha
  */
-record ** get_left_most_leaf( node * root, bool verbose ) {
+chunk * get_left_most_leaf( node * root, bool verbose ) {
 	node * c = find_left_most_leaf( root, verbose );
 
 	if (c == NULL) return NULL;
-	record **left_most_leaf=(record **)malloc(order*sizeof(record *));
-
 	if (0 == c->num_keys) 
 		return NULL;
 	
+	// Improvement can be made be allocating only num_keys elements
+	chunk *left_most_leaf=(chunk *)malloc(sizeof(chunk));
+	left_most_leaf->value=(record **)malloc(order*sizeof(record *));
+	left_most_leaf->key=(int *)malloc(order*sizeof(int));
+
 	int i=0;
 	for (i=0;i<c->num_keys;i++) {
-		left_most_leaf[i]=(record *)c->pointers[i];	
+		left_most_leaf->key[i]=c->keys[i];	
+		left_most_leaf->value[i]=c->pointers[i];
 	}
-	left_most_leaf[i]=NULL;
+	left_most_leaf->value[i]=NULL;
 
-	return (record **)left_most_leaf;
+	return (chunk *)left_most_leaf;
 }
 
 /* Returns the records of the rightmost node 
  * Added by Koosha
  */
-record ** get_right_most_leaf( node * root, bool verbose ) {
+chunk * get_right_most_leaf( node * root, bool verbose ) {
 	node * c = find_right_most_leaf( root, verbose );
 
 	if (c == NULL) return NULL;
-	record **right_most_leaf=(record **)malloc(order*sizeof(record *));
-
 	if (0 == c->num_keys) 
 		return NULL;
 	
+	// Improvement can be made be allocating only num_keys elements
+	chunk *right_most_leaf=(chunk *)malloc(sizeof(chunk));
+	right_most_leaf->value=(record **)malloc(order*sizeof(record *));
+	right_most_leaf->key=(int *)malloc(order*sizeof(int));
+
 	int i=0;
 	for (i=0;i<c->num_keys;i++) {
-		right_most_leaf[i]=(record *)c->pointers[i];	
+		right_most_leaf->key[i]=c->keys[i];
+		right_most_leaf->value[i]=c->pointers[i];	
 	}
-	right_most_leaf[i]=NULL;
+	right_most_leaf->value[i]=NULL;
 
-	return (record **)right_most_leaf;
+	return (chunk *)right_most_leaf;
 }
 
 /* Finds and returns the record to which
