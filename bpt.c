@@ -449,7 +449,7 @@ chunk * get_left_most_leaf( node * root, bool verbose ) {
 	
 	// Improvement can be made be allocating only num_keys elements
 	chunk *left_most_leaf=(chunk *)malloc(sizeof(chunk));
-	left_most_leaf->value=(record **)malloc(order*sizeof(record *));
+	left_most_leaf->value=(record **)calloc(order,sizeof(record *));
 	left_most_leaf->key=(int *)malloc(order*sizeof(int));
 
 	int i=0;
@@ -474,7 +474,7 @@ chunk * get_right_most_leaf( node * root, bool verbose ) {
 	
 	// Improvement can be made be allocating only num_keys elements
 	chunk *right_most_leaf=(chunk *)malloc(sizeof(chunk));
-	right_most_leaf->value=(record **)malloc(order*sizeof(record *));
+	right_most_leaf->value=(record **)calloc(order,sizeof(record *));
 	right_most_leaf->key=(int *)malloc(order*sizeof(int));
 
 	int i=0;
@@ -700,11 +700,11 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
 		new_leaf->num_keys++;
 	}
 
-	//free(temp_pointers);
-	//free(temp_keys);
-	add_garbage(temp_pointers,global_version);
-	add_garbage(temp_keys,global_version);
-	++global_version;
+	free(temp_pointers);
+	free(temp_keys);
+	//add_garbage(temp_pointers,global_version);
+	//add_garbage(temp_keys,global_version);
+	//++global_version;
 	
 	new_leaf->pointers[order - 1] = leaf->pointers[order - 1];
 	leaf->pointers[order - 1] = new_leaf;
@@ -805,11 +805,11 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 		new_node->num_keys++;
 	}
 	new_node->pointers[j] = temp_pointers[i];
-	//free(temp_pointers);
-	//free(temp_keys);
-	add_garbage(temp_pointers,global_version);
-	add_garbage(temp_keys,global_version);
-	++global_version;
+	free(temp_pointers);
+	free(temp_keys);
+	//add_garbage(temp_pointers,global_version);
+	//add_garbage(temp_keys,global_version);
+	//++global_version;
 
 	new_node->parent = old_node->parent;
 	for (i = 0; i <= new_node->num_keys; i++) {

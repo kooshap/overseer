@@ -6,28 +6,29 @@
 // Used by the garbage collector to check which objects are safe to delete
 unsigned long long last_reader_version[MAX_READERS];
 
-struct garbage_item *garbage_head = NULL;
-struct garbage_item *garbage_curr = NULL;
-struct garbage_item *candidate_head = NULL;
-struct garbage_item *candidate_curr = NULL;
+struct garbage_item *garbage_head = 0;
+struct garbage_item *garbage_curr = 0;
+struct garbage_item *candidate_head = 0;
+struct garbage_item *candidate_curr = 0;
 
 pthread_mutex_t swap_mutex;
 
 struct garbage_item* add_garbage(void *victim, unsigned long long curr_version)
 {
-	struct garbage_item *ptr = (struct garbage_item*)malloc(sizeof(struct garbage_item));
-	if(NULL == ptr)
+	struct garbage_item *ptr;
+	ptr = (struct garbage_item *)malloc(sizeof(struct garbage_item));	
+	/*if(NULL == ptr)
 	{
 		//printf("\n Node creation failed \n");
-		return NULL;
-	}
+		return 0;
+	}*/
 	ptr->victim = victim;
 	ptr->version = curr_version;
-	ptr->next = NULL;
+	ptr->next = 0;
 
 	pthread_mutex_lock(&swap_mutex);
 
-	if(NULL == candidate_head)
+	if(0 == candidate_head)
 	{
 		candidate_head = candidate_curr = ptr;
 	}	
@@ -39,18 +40,18 @@ struct garbage_item* add_garbage(void *victim, unsigned long long curr_version)
 	
 	pthread_mutex_unlock(&swap_mutex);
 
-	return ptr;
+	return candidate_curr;
 }
 
 struct garbage_item* search_in_list(void *victim, struct garbage_item **prev)
 {
 	struct garbage_item *ptr = candidate_head;
-	struct garbage_item *tmp = NULL;
+	struct garbage_item *tmp = 0;
 	bool found = false;
 
 	//printf("\n Searching the list for value [%d] \n",victim);
 
-	while(ptr != NULL)
+	while(ptr != 0)
 	{
 		if(ptr->victim == victim)
 		{
@@ -72,14 +73,14 @@ struct garbage_item* search_in_list(void *victim, struct garbage_item **prev)
 	}
 	else
 	{
-		return NULL;
+		return 0;
 	}
 }
 
 // Sqaps the garbage list and the candidate list
 void swap_lists()
 {
-	struct garbage_item *tmp = NULL;
+	struct garbage_item *tmp = 0;
 
 	tmp = candidate_head;
 	candidate_head = garbage_head;
@@ -127,11 +128,11 @@ void empty_garbage()
 
 	struct timespec tim, tim2;
 	tim.tv_sec = 0;
-	tim.tv_nsec = 1000000L;
+	tim.tv_nsec = 100000000L;
 
 	while (1) {
-		ptr = NULL;
-		tmp = NULL;
+		ptr = 0;
+		tmp = 0;
 
 		// Sleep 
 		nanosleep(&tim , &tim2);
@@ -146,23 +147,24 @@ void empty_garbage()
 		ptr = garbage_head;
 				
 		// empty the garbage list
-		while (ptr != NULL)
+		while (ptr != 0)
 		{
 			// free the garbage object
 			//printf("Free %p %p\n", ptr->victim, ptr);
 
 			//printf(".");
-			if (ptr->next==NULL) {
+			if (ptr->next==0) {
 				garbage_curr=ptr;
 			}
 
 			if (ptr->version>min_version) {
+				//printf("%p ",ptr->next);
 				ptr = ptr->next;
 				continue;
 			}
 			
 			free(ptr->victim);
-			ptr->victim = NULL;
+			ptr->victim = 0;
 
 			tmp = ptr;
 			ptr = ptr->next;
@@ -171,12 +173,13 @@ void empty_garbage()
 				garbage_head=ptr;
 			}
 			// free the linkedList object
+			//printf(".");
 			free(tmp);
-			tmp = NULL;
+			tmp = 0;
 		}
 		// If the list is empty
-		if (garbage_head==NULL) {	
-			garbage_curr = NULL;
+		if (garbage_head==0) {	
+			garbage_curr = 0;
 		}
 		
 		swap_lists();
@@ -186,21 +189,66 @@ void empty_garbage()
 	}
 }
 
+// empties the garbage list without checking the versions
+void force_empty_garbage()
+{
+	struct garbage_item *ptr;
+	struct garbage_item *tmp;
+
+	// get the lock	
+	pthread_mutex_lock(&swap_mutex);
+	
+	ptr = garbage_head;
+	// empty the garbage list
+	while (ptr != 0)
+	{
+		// free the garbage object
+		free(ptr->victim);
+		ptr->victim = 0;
+
+		tmp = ptr;
+		ptr = ptr->next;
+		// free the linkedList object
+		
+		//printf("%p\n",tmp);
+		free(tmp);
+		tmp = 0;
+	}
+
+	ptr = candidate_head;
+	// empty the candidate list
+	while (ptr != 0)
+	{
+		// free the garbage object
+		free(ptr->victim);
+		ptr->victim = 0;
+
+		tmp = ptr;
+		ptr = ptr->next;
+		// free the linkedList object
+		free(tmp);
+		tmp = 0;
+	}
+
+	// release the lock
+	pthread_mutex_unlock(&swap_mutex);
+}
+
 int delete_from_list(void *victim)
 {
-	struct garbage_item *prev = NULL;
-	struct garbage_item *del = NULL;
+	struct garbage_item *prev = 0;
+	struct garbage_item *del = 0;
 
 	//printf("\n Deleting value [%d] from list\n",victim);
 
 	del = search_in_list(victim,&prev);
-	if(del == NULL)
+	if(del == 0)
 	{
 		return -1;
 	}
 	else
 	{
-		if(prev != NULL)
+		if(prev != 0)
 			prev->next = del->next;
 
 		if(del == candidate_curr)
@@ -214,7 +262,7 @@ int delete_from_list(void *victim)
 	}
 
 	free(del);
-	del = NULL;
+	del = 0;
 
 	return 0;
 }
@@ -224,7 +272,7 @@ void print_list(void)
 	struct garbage_item *ptr = candidate_head;
 
 	//printf("\n -------Printing list Start------- \n");
-	while(ptr != NULL)
+	while(ptr != 0)
 	{
 		//printf("\n [%d] \n",ptr->victim);
 		ptr = ptr->next;

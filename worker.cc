@@ -14,7 +14,7 @@ int *write_router=new int[NUM_OF_WORKER];
 int *read_router=new int[NUM_OF_WORKER];
 
 // Root nodes of each worker's tree
-node **root=(node **)malloc(NUM_OF_WORKER*sizeof(node *));
+node **root=(node **)calloc(NUM_OF_WORKER,sizeof(node *));
 
 // Offloading locks
 mutex offload_mutex[NUM_OF_WORKER-1];
@@ -145,7 +145,7 @@ void release_offload_lock(int offloader_id,int victim_id)
 }
 
 void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq){
-	string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
+	//string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
 	int leftMostKey=-1;
 	int rightMostKey=-1;
