@@ -48,6 +48,7 @@ void free_stats()
 void stop_stats()
 {
 	stopped=1;
+	free_stats();
 }
 
 void print_stats()
@@ -68,9 +69,9 @@ void *resetter()
 	while (!stopped) {
 		// Sleep 
 		nanosleep(&tim , &tim2);
+		if (stopped) break;
 		reset_stats();
 	}
-	free_stats();
 	printf("Stat stopped and freed\n");
 }
 

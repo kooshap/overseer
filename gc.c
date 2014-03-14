@@ -12,9 +12,11 @@ struct garbage_item *candidate_head = 0;
 struct garbage_item *candidate_curr = 0;
 
 pthread_mutex_t swap_mutex;
+int stop=0;
 
 struct garbage_item* add_garbage(void *victim, unsigned long long curr_version)
 {
+	//printf("Garbage added %p\n",victim);
 	struct garbage_item *ptr;
 	ptr = (struct garbage_item *)malloc(sizeof(struct garbage_item));	
 	/*if(NULL == ptr)
@@ -130,13 +132,17 @@ void empty_garbage()
 	tim.tv_sec = 0;
 	tim.tv_nsec = 100000000L;
 
-	while (1) {
+	while (!stop) {
 		ptr = 0;
 		tmp = 0;
 
 		// Sleep 
 		nanosleep(&tim , &tim2);
-	
+
+		if (stop) break;	
+
+		//printf("Start emptying\n");
+
 		// Get the minimum version among the completed reads	
 		min_version = get_min_version();
 		//printf("Min version: %llu\n", min_version);
@@ -173,7 +179,7 @@ void empty_garbage()
 				garbage_head=ptr;
 			}
 			// free the linkedList object
-			//printf(".");
+			//printf("-");
 			free(tmp);
 			tmp = 0;
 		}
@@ -187,6 +193,7 @@ void empty_garbage()
 		// release the lock
 		pthread_mutex_unlock(&swap_mutex);
 	}
+	force_empty_garbage();
 }
 
 // empties the garbage list without checking the versions
@@ -232,6 +239,11 @@ void force_empty_garbage()
 
 	// release the lock
 	pthread_mutex_unlock(&swap_mutex);
+}
+
+void stop_gc()
+{
+	stop=1;
 }
 
 int delete_from_list(void *victim)

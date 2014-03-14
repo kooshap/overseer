@@ -20,3 +20,4 @@ struct garbage_item* add_garbage(void *victim, unsigned long long reader_id);
 
 void empty_garbage();
 void force_empty_garbage();
+void stop_gc();

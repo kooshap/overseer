@@ -1,3 +1,3 @@
-const int NUM_OF_WORKER=2;
+const int NUM_OF_WORKER=5;
 
-int findContainer(int key,int *routingArr);
+int find_container(int key,int *routingArr);

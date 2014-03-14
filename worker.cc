@@ -144,11 +144,8 @@ void release_offload_lock(int offloader_id,int victim_id)
 	printf("Released lock #%d\n",(offloader_id<victim_id)?offloader_id:victim_id);
 }
 
-void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq){
+void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
 	//string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
-
-	int leftMostKey=-1;
-	int rightMostKey=-1;
 
 	Clock::time_point t0 = Clock::now();
 
@@ -159,7 +156,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq){
 	while (t.opCode!=EXIT_OP) {
 		switch (t.opCode) {
 			case WRITE_OP:
-				wid=findContainer(t.key,write_router);
+				wid=find_container(t.key,write_router);
 				if (wid!=id) {
 					tq[wid].put(t);
 					t=tq[id].get();
@@ -168,7 +165,7 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq){
 				worker_write(id,t.key, t.key);	
 				break;
 			case DELETE_OP:
-				wid=findContainer(t.key,write_router);
+				wid=find_container(t.key,write_router);
 				if (wid!=id) {
 					tq[wid].put(t);
 					t=tq[id].get();
@@ -199,12 +196,13 @@ void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq){
 		t=tq[id].get();
 	}
 	if (root[id]) {
+		//printf("root: %p\n",root[id]);
 		destroy_tree(root[id]);
 	}
 
 	Clock::time_point t1 = Clock::now();
 	printf("Time: %f\n", sec(t1-t0).count());
 	
-	--*activeThreads;
+	--*active_threads;
 }
 

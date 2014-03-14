@@ -1,7 +1,8 @@
 CFLAGS="-ggdb"
+#CFLAGS=
 
 overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o
-	g++ $(CFLAGS) -O2  -pg -pthread -o $@ $^ 
+	g++ $(CFLAGS) -O2 -pthread -o $@ $^ 
 
 overseer.o: overseer.cc overseer.h worker.o
 	g++ $(CFLAGS) -std=gnu++0x -O2 -c overseer.cc 

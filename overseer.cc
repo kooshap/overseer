@@ -9,8 +9,8 @@
 #include "overseer.h"
 #include "worker.h"
 
-const int NREAD=50000;
-const int MAXKEY=50000;
+const int NREAD=5000;
+const int MAXKEY=5000;
 
 using namespace std;
 
@@ -19,19 +19,19 @@ typedef chrono::duration<double> sec;
 
 //string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
-int binarySearch(int *arr,int key,int minIdx,int maxIdx){
+int binary_search(int *arr,int key,int minIdx,int maxIdx){
 	if (arr[maxIdx]<= key)
 		return maxIdx;
 	if (maxIdx - minIdx == 1) 
 		return minIdx;
 	int idx = (minIdx + maxIdx) >> 1;
 	if (arr[idx] > key) 
-		return binarySearch(arr, key, minIdx, idx);
-	return binarySearch(arr, key, idx, maxIdx);
+		return binary_search(arr, key, minIdx, idx);
+	return binary_search(arr, key, idx, maxIdx);
 }
 
-int findContainer(int key,int *routingArr) {
-	return binarySearch(routingArr, key, 0, NUM_OF_WORKER-1);
+int find_container(int key,int *routingArr) {
+	return binary_search(routingArr, key, 0, NUM_OF_WORKER-1);
 }
 
 bool belongTo(int workerNum, int key, int *arr) {
@@ -39,8 +39,8 @@ bool belongTo(int workerNum, int key, int *arr) {
 	return (arr[workerNum]<=key) && (arr[workerNum+1]>key);
 }
 
-void routeTask(task t) {
-	tq[findContainer(t.key, write_router)].put(t);
+void route_task(task t) {
+	tq[find_container(t.key, write_router)].put(t);
 }
 
 void overseer_write(int key,string val) {
@@ -48,7 +48,7 @@ void overseer_write(int key,string val) {
 	t.key=key;
 	t.value=val;
 	t.opCode=WRITE_OP;
-	routeTask(t);
+	route_task(t);
 }
 
 void overseer_delete(int key) {
@@ -56,7 +56,7 @@ void overseer_delete(int key) {
 	t.key=key;
 	//t->value.clear();
 	t.opCode=DELETE_OP;
-	routeTask(t);
+	route_task(t);
 } 
 
 void worker_exit(int id) {
@@ -76,9 +76,9 @@ int overseer_read(int k,node *root){
 }
 
 int main(){
-	std::atomic<int> activeThreads;
-	activeThreads=NUM_OF_WORKER;
-	thread workerThread[NUM_OF_WORKER];
+	std::atomic<int> active_threads;
+	active_threads=NUM_OF_WORKER;
+	thread worker_thread[NUM_OF_WORKER];
 	
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		write_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
@@ -97,67 +97,75 @@ int main(){
 	init_stats(NUM_OF_WORKER);
 
 	// Start the garbage collector
-	thread gcThread = thread(empty_garbage);
-	gcThread.detach();
+	thread gc_thread = thread(empty_garbage);
+	gc_thread.detach();
 
 
 	Clock::time_point t0 = Clock::now();
 	for (int i=0;i<NUM_OF_WORKER;i++){
-		workerThread[i] = thread(run,i,&activeThreads,ref(tq));
-		workerThread[i].detach();
+		worker_thread[i] = thread(run,i,&active_threads,ref(tq));
+		worker_thread[i].detach();
 	}
 	this_thread::sleep_for (std::chrono::milliseconds(1000));
 
-	int missCount=0;
+	int miss_count=0;
 	node *croot;
 	int result1,result2;
 	for (int i=0;i<NREAD/2;i++){
-		//printf("findContainer(%d)=%d\n",i,findContainer(i,write_router));
-		croot=root[findContainer(i,read_router)];
+		//printf("find_container(%d)=%d\n",i,find_container(i,write_router));
+		croot=root[find_container(i,read_router)];
 		if (croot) {
 			result1=overseer_read(i,croot);
 		}
-		croot=root[findContainer(NREAD/2+i,read_router)];
+		croot=root[find_container(NREAD/2+i,read_router)];
 		if (croot) {
 			result2=overseer_read(NREAD/2+i,croot);
 		}
-		if (result1==-1) missCount++;
-		if (result2==-1) missCount++;
+		if (result1==-1) miss_count++;
+		if (result2==-1) miss_count++;
 	}
 	
-	printf("%d reads missed\n",missCount);
+	printf("%d reads missed\n",miss_count);
 	
 	
 	for (int i=0;i<MAXKEY;i++){
 		overseer_delete(i);
 	}
 	
+	this_thread::sleep_for (std::chrono::milliseconds(1000));
+
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		worker_exit(i);
 	}
 	
-	printf("Exit commands sent, active threads:%d\n",(int)activeThreads);
+	printf("Exit commands sent, active threads:%d\n",(int)active_threads);
 
-	while (activeThreads)
+	while (active_threads)
 		this_thread::sleep_for (std::chrono::milliseconds(100));
 
 	
 	Clock::time_point t1 = Clock::now();
 	//printf("All thread finished in: %f\n", sec(t1-t0).count());
 
-	// Terminate the garbage collector thread
-	gcThread.~thread();
-
 	// Stop the worker stats
 	stop_stats();
 
+	// Terminate the garbage collector thread
+	stop_gc();
+
 	// Wait for GC and Stats to end
-	this_thread::sleep_for (std::chrono::milliseconds(500));
+	//this_thread::sleep_for (std::chrono::milliseconds(500));
+	t0 = Clock::now();
+	t1 = Clock::now();
+	while (sec(t1-t0).count()<1){
+		t1 = Clock::now();
+	}
 	
 	// Free whatever object left in the garbage collector
-	force_empty_garbage();
+	//force_empty_garbage();
 
 	delete[] tq;
+	delete[] read_router;
 	delete[] write_router;
 	return 0;	
 
