@@ -1,5 +1,5 @@
-CFLAGS="-ggdb"
-#CFLAGS=
+#CFLAGS="-ggdb"
+CFLAGS="-pg"
 
 overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o
 	g++ $(CFLAGS) -O2 -pthread -o $@ $^ 
@@ -42,6 +42,6 @@ bpt.o: bpt.c bpt.h gc.h
 
 .PHONY: clean
 clean:
-	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o offloading_policy.o bpt*.o overseer
+	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o offloading_policy.o gc.o bpt*.o overseer
 	
 

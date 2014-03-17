@@ -117,11 +117,11 @@ node * start_new_tree(int key, record * pointer);
 // Deletion.
 
 int get_neighbor_index( node * n );
-node * adjust_root(node * root);
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime);
+node * adjust_root(node * root,int worker_id);
+node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime, int worker_id);
 node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
 		int k_prime_index, int k_prime);
-node * delete_entry( node * root, node * n, int key, void * pointer );
+node * delete_entry( node * root, node * n, int key, void * pointer , int worker_id);
 
 
 // FUNCTION DEFINITIONS.
@@ -1024,7 +1024,7 @@ node * remove_entry_from_node(node * n, int key, node * pointer) {
 }
 
 
-node * adjust_root(node * root) {
+node * adjust_root(node * root, int worker_id) {
 
 	node * new_root;
 
@@ -1057,9 +1057,9 @@ node * adjust_root(node * root) {
 	//free(root->keys);
 	//free(root->pointers);
 	//free(root);
-	add_garbage(root->keys,global_version);
-	add_garbage(root->pointers,global_version);
-	add_garbage(root,global_version);
+	add_garbage(root->keys,global_version,worker_id);
+	add_garbage(root->pointers,global_version,worker_id);
+	add_garbage(root,global_version,worker_id);
 	++global_version;
 
 	return new_root;
@@ -1072,7 +1072,7 @@ node * adjust_root(node * root) {
  * can accept the additional entries
  * without exceeding the maximum.
  */
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime) {
+node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime, int worker_id) {
 
 	int i, j, neighbor_insertion_index, n_start, n_end, new_k_prime;
 	node * tmp;
@@ -1190,13 +1190,13 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
 	}
 
 	if (!split) {
-		root = delete_entry(root, n->parent, k_prime, n);
+		root = delete_entry(root, n->parent, k_prime, n, worker_id);
 		//free(n->keys);
 		//free(n->pointers);
 		//free(n); 
-		add_garbage(n->keys,global_version);
-		add_garbage(n->pointers,global_version);
-		add_garbage(n,global_version);
+		add_garbage(n->keys,global_version,worker_id);
+		add_garbage(n->pointers,global_version,worker_id);
+		add_garbage(n,global_version,worker_id);
 		++global_version;
 	}
 	else
@@ -1294,7 +1294,7 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
  * from the leaf, and then makes all appropriate
  * changes to preserve the B+ tree properties.
  */
-node * delete_entry( node * root, node * n, int key, void * pointer ) {
+node * delete_entry( node * root, node * n, int key, void * pointer ,int worker_id) {
 
 	int min_keys;
 	node * neighbor;
@@ -1310,7 +1310,7 @@ node * delete_entry( node * root, node * n, int key, void * pointer ) {
 	 */
 
 	if (n == root) 
-		return adjust_root(root);
+		return adjust_root(root,worker_id);
 
 
 	/* Case:  deletion from a node below the root.
@@ -1353,7 +1353,7 @@ node * delete_entry( node * root, node * n, int key, void * pointer ) {
 	/* Coalescence. */
 
 	if (neighbor->num_keys + n->num_keys < capacity)
-		return coalesce_nodes(root, n, neighbor, neighbor_index, k_prime);
+		return coalesce_nodes(root, n, neighbor, neighbor_index, k_prime, worker_id);
 
 	/* Redistribution. */
 
@@ -1365,7 +1365,7 @@ node * delete_entry( node * root, node * n, int key, void * pointer ) {
 
 /* Master deletion function.
  */
-node * bptdelete(node * root, int key) {
+node * bptdelete(node * root, int key, int worker_id) {
 
 	node * key_leaf;
 	record * key_record;
@@ -1373,38 +1373,38 @@ node * bptdelete(node * root, int key) {
 	key_record = find(root, key, -1);
 	key_leaf = find_leaf(root, key, false);
 	if (key_record != NULL && key_leaf != NULL) {
-		root = delete_entry(root, key_leaf, key, key_record);
+		root = delete_entry(root, key_leaf, key, key_record, worker_id);
 		//free(key_record);
-		add_garbage(key_record,global_version);
+		add_garbage(key_record,global_version,worker_id);
 		++global_version;
 	}
 	return root;
 }
 
 
-void destroy_tree_nodes(node * root) {
+void destroy_tree_nodes(node * root, int worker_id) {
 	int i;
 	if (root->is_leaf)
 		for (i = 0; i < root->num_keys; i++) {
 			//free(root->pointers[i]);
-			add_garbage(root->pointers[i],global_version);
+			add_garbage(root->pointers[i],global_version,worker_id);
 			++global_version;
 		}			
 	else
 		for (i = 0; i < root->num_keys + 1; i++)
-			destroy_tree_nodes(root->pointers[i]);
+			destroy_tree_nodes(root->pointers[i], worker_id);
 	//free(root->pointers);
 	//free(root->keys);
 	//free(root);
-	add_garbage(root->pointers,global_version);
-	add_garbage(root->keys,global_version);
-	add_garbage(root,global_version);
+	add_garbage(root->pointers,global_version,worker_id);
+	add_garbage(root->keys,global_version,worker_id);
+	add_garbage(root,global_version,worker_id);
 	++global_version;
 }
 
 
-node * destroy_tree(node * root) {
-	destroy_tree_nodes(root);
+node * destroy_tree(node * root, int worker_id) {
+	destroy_tree_nodes(root, worker_id);
 	return NULL;
 }
 

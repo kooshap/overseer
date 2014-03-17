@@ -32,7 +32,7 @@ int worker_write(int id,int k, int v){
 }
 
 int worker_delete(int id,int k){
-	root[id]=bptdelete(root[id],k);
+	root[id]=bptdelete(root[id],k,id);
 	return 0;
 }
 
@@ -197,7 +197,7 @@ void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
 	}
 	if (root[id]) {
 		//printf("root: %p\n",root[id]);
-		destroy_tree(root[id]);
+		destroy_tree(root[id],id);
 	}
 
 	Clock::time_point t1 = Clock::now();

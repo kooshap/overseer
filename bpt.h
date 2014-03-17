@@ -96,8 +96,8 @@ node * bptinsert( node * root, int key, int value );
 
 // Deletion.
 
-node * destroy_tree(node * root);
-node * bptdelete( node * root, int key);
+node * destroy_tree(node * root, int worker_id);
+node * bptdelete( node * root, int key, int worker_id);
 
 #ifdef _cplusplus
 }

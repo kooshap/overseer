@@ -9,8 +9,8 @@
 #include "overseer.h"
 #include "worker.h"
 
-const int NREAD=5000;
-const int MAXKEY=5000;
+const int NREAD=500000;
+const int MAXKEY=500000;
 
 using namespace std;
 
