@@ -1,7 +1,7 @@
 #include <pthread.h>
 #include <time.h>
 #include "gc.h"
-#include "overseer.h"
+#include "parameters.h"
 
 // The id of the last read operation for every reading thread
 // Used by the garbage collector to check which objects are safe to delete

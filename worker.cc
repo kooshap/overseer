@@ -1,5 +1,16 @@
-#include "worker.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <cstring>
+#include <random>
+#include <chrono>
+#include <atomic>
+#include <thread>
 #include "overseer.h"
+#include "worker.h"
+
+using namespace std;
 
 typedef minstd_rand G;
 typedef uniform_int_distribution<> D;

@@ -1,13 +1,13 @@
 #CFLAGS="-ggdb"
 CFLAGS="-pg"
 
-overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o
+overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o
 	g++ $(CFLAGS) -O2 -pthread -o $@ $^ 
 
 overseer.o: overseer.cc overseer.h worker.o
 	g++ $(CFLAGS) -std=gnu++0x -O2 -c overseer.cc 
 
-taskQueue.o: taskQueue.cc
+taskQueue.o: taskQueue.cc taskQueue.h task.cc
 	g++ $(CFLAGS) -std=gnu++0x -O2 -c taskQueue.cc -lm
 
 task.o: task.cc
@@ -24,6 +24,9 @@ statistics.o: statistics.c statistics.h
 
 offloading_policy.o: offloading_policy.c 
 	gcc $(CFLAGS) -O2 -c offloading_policy.c
+	
+socket_server.o: socket_server.cc 
+	gcc $(CFLAGS) -std=gnu++0x -O2 -c socket_server.cc
 
 nomap: nomap.cc
 	g++ $(CFLAGS) -Wall -O3 -fPIC -shared -pthread -o $@ nomap.cc

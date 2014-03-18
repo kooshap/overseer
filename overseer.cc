@@ -1,18 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <random>
 #include <chrono>
 #include <thread>
 #include <atomic>
 #include <math.h>
-#include "overseer.h"
 #include "worker.h"
+#include "overseer.h"
+#include "socket_server.h"
 
 const int NREAD=500000;
 const int MAXKEY=500000;
-
-using namespace std;
 
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
@@ -65,9 +63,10 @@ void worker_exit(int id) {
 	tq[id].put(t);
 }
 
-int overseer_read(int k,node *root){
+int overseer_read(int k){
+	node *croot=root[find_container(k,read_router)];
 	record *rec=0;
-	rec=find(root,k,0);
+	rec=find(croot,k,0);
 	if (rec){
 		return rec->value;
 	}else{
@@ -108,25 +107,21 @@ int main(){
 	}
 	this_thread::sleep_for (std::chrono::milliseconds(1000));
 
+	/*
 	int miss_count=0;
-	node *croot;
 	int result1,result2;
 	for (int i=0;i<NREAD/2;i++){
 		//printf("find_container(%d)=%d\n",i,find_container(i,write_router));
-		croot=root[find_container(i,read_router)];
-		if (croot) {
-			result1=overseer_read(i,croot);
-		}
-		croot=root[find_container(NREAD/2+i,read_router)];
-		if (croot) {
-			result2=overseer_read(NREAD/2+i,croot);
-		}
+		result1=overseer_read(i);
+		result2=overseer_read(NREAD/2+i);
 		if (result1==-1) miss_count++;
 		if (result2==-1) miss_count++;
 	}
 	
 	printf("%d reads missed\n",miss_count);
-	
+	*/	
+	thread server_thread=thread(run_server);
+	server_thread.join();
 	
 	for (int i=0;i<MAXKEY;i++){
 		overseer_delete(i);

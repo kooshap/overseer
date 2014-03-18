@@ -1,23 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <random>
-#include <chrono>
-#include <atomic>
-#include <thread>
-//#include "server.h"
-#include "taskQueue.cc"
+#include "taskQueue.h"
 extern "C"{
 #include "bpt.h"
-}
-extern "C"{
 #include "statistics.h"
 #include "offloading_policy.h"
 }
-
-using namespace std;
 
 extern taskQueue *tq;
 extern int *write_router;
