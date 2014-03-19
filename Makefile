@@ -25,7 +25,7 @@ statistics.o: statistics.c statistics.h
 offloading_policy.o: offloading_policy.c 
 	gcc $(CFLAGS) -O2 -c offloading_policy.c
 	
-socket_server.o: socket_server.cc 
+socket_server.o: socket_server.cc overseer.h 
 	gcc $(CFLAGS) -std=gnu++0x -O2 -c socket_server.cc
 
 nomap: nomap.cc

@@ -100,7 +100,7 @@ int cut( int length );
 
 // Insertion.
 
-record * make_record(int value);
+record * make_record(char *value);
 node * make_node( void );
 node * make_leaf( void );
 int get_left_index(node * parent, node * left);
@@ -279,7 +279,7 @@ void find_and_print(node * root, int key, bool verbose) {
 	if (r == NULL)
 		printf("Record not found under key %d.\n", key);
 	else 
-		printf("Record at %lx -- key %d, value %d.\n",
+		printf("Record at %lx -- key %d, value %s.\n",
 				(unsigned long)r, key, r->value);
 }
 
@@ -299,7 +299,7 @@ void find_and_print_range( node * root, int key_start, int key_end,
 		printf("None found.\n");
 	else {
 		for (i = 0; i < num_found; i++)
-			printf("Key: %d   Location: %lx  Value: %d\n",
+			printf("Key: %d   Location: %lx  Value: %s\n",
 					returned_keys[i],
 					(unsigned long)returned_pointers[i],
 					((record *)
@@ -559,7 +559,7 @@ int cut( int length ) {
 /* Creates a new record to hold the value
  * to which a key refers.
  */
-record * make_record(int value) {
+record * make_record(char *value) {
 	record * new_record = (record *)malloc(sizeof(record));
 	if (new_record == NULL) {
 		perror("Record creation.");
@@ -908,7 +908,7 @@ node * start_new_tree(int key, record * pointer) {
  * however necessary to maintain the B+ tree
  * properties.
  */
-node * bptinsert( node * root, int key, int value ) {
+node * bptinsert( node * root, int key, char *value ) {
 
 	record * pointer;
 	node * leaf;

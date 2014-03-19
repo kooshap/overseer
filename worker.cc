@@ -30,14 +30,14 @@ node **root=(node **)calloc(NUM_OF_WORKER,sizeof(node *));
 // Offloading locks
 mutex offload_mutex[NUM_OF_WORKER-1];
 
-int worker_write(int id,int k, int v){
+int worker_write(int id,int k, char *v){
 	if (root[id]) {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
-		root[id]=bptinsert(root[id],k,k);
+		root[id]=bptinsert(root[id],k,v);
 	}
 	else {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
-		root[id]=bptinsert(root[id],k,k);
+		root[id]=bptinsert(root[id],k,v);
 	}
 	return 0;
 }
@@ -129,7 +129,7 @@ void push_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_write(id,offload_chunk->key[i],offload_chunk->value[i]->value);
-		printf("Pushed %d/%d \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		printf("Pushed %d/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
 		i++;
 	}
 }
@@ -141,7 +141,7 @@ void remove_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_delete(id,offload_chunk->key[i]);
-		printf("Removed %d/%d \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		printf("Removed %d/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
 		i++;
 	}
 	free(offload_chunk->key);
@@ -173,7 +173,7 @@ void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
 					t=tq[id].get();
 					continue;
 				}
-				worker_write(id,t.key, t.key);	
+				worker_write(id,t.key, (char *)t.value.c_str());	
 				break;
 			case DELETE_OP:
 				wid=find_container(t.key,write_router);
@@ -182,7 +182,6 @@ void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
 					t=tq[id].get();
 					continue;
 				}
-				worker_write(id,t.key, t.key);	
 				if (!worker_delete(id,t.key)) {
 				}
 				break;

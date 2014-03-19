@@ -36,35 +36,50 @@ int run_server()
 	{
 		n = recv(connfd, recvBuff, sizeof(recvBuff)-1,0);
 		if (n>0) {
-			printf("%s\n",recvBuff);
+			//printf("%s\n",recvBuff);
 
 			size_t key;
-			int result;
+			char command,*tok,*result,*value;
 			//sscanf(recvBuff,"%zd",&key);	
-			char *tok = strtok(recvBuff, " ");
-			char command=tok[0];
-			tok = strtok(NULL, " ");
-			sscanf(tok,"%zd",&key);	
-			printf("KEY: %zd\n", key);
-			
+			tok = strtok(recvBuff, " ");
+			if (tok!=NULL) {
+				command=tok[0];
+				tok = strtok(NULL, " ");
+			}
+			if (tok!=NULL) {
+				sscanf(tok,"%zd",&key);	
+				printf("KEY: %zd\n", key);
+				tok = strtok(NULL, " ");
+			} 
+			if (tok!=NULL) {
+				int vlen=strlen(tok);
+				value=(char *)malloc(vlen*sizeof(*value));
+				strncpy(value,tok,vlen);
+				if (value[vlen-1]=='\n') {
+					value[vlen-1]='\0';
+				}
+				printf("VALUE:%s\n",value);
+			}
+
 			if (command) {
 				printf("OPERATION: %c\n", command);
 				if (command=='r') {
 					result=overseer_read(key);
-					printf("Read:%d\n",result);
+					printf("Read:%s\n",result);
+					snprintf(sendBuff, sizeof(sendBuff), "%s\n", result);
 				}
 				else if(command=='w') {
-					overseer_write(key,"");
+					overseer_write(key,value);
+					snprintf(sendBuff, sizeof(sendBuff), "1\n");
 				}
 				else if(command=='d') {
 					overseer_delete(key);
+					snprintf(sendBuff, sizeof(sendBuff), "1\n");
 				}
 			}
-
 			memset(recvBuff,0,strlen(recvBuff));
-
-			snprintf(sendBuff, sizeof(sendBuff), "%d\n", result);
 			send(connfd, sendBuff, strlen(sendBuff),0);
+			memset(recvBuff,0,strlen(recvBuff));
 		}
 		//close(connfd);
 		//sleep(1);

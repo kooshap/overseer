@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 typedef struct record {
-	int value;
+	char *value;
 } record;
 
 typedef struct chunk {
@@ -92,7 +92,7 @@ chunk *get_right_most_leaf( node * root, bool verbose );
 
 // Insertion.
 
-node * bptinsert( node * root, int key, int value );
+node * bptinsert( node * root, int key, char *value );
 
 // Deletion.
 

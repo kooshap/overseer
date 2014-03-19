@@ -63,14 +63,14 @@ void worker_exit(int id) {
 	tq[id].put(t);
 }
 
-int overseer_read(int k){
+char *overseer_read(int k){
 	node *croot=root[find_container(k,read_router)];
 	record *rec=0;
 	rec=find(croot,k,0);
 	if (rec){
 		return rec->value;
 	}else{
-		return -1;
+		return (char *)("-1");
 	}
 }
 
@@ -86,8 +86,8 @@ int main(){
 	}
 
 	for (int i=0;i<MAXKEY/2;i++){
-		overseer_write(i,"");
-		overseer_write(MAXKEY/2+i,"");
+		overseer_write(i,"Hello!");
+		overseer_write(MAXKEY/2+i,"Hello2!");
 	}	
 
 	//printf("write queue filled\n");
