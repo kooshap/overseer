@@ -173,7 +173,7 @@ void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
 					t=tq[id].get();
 					continue;
 				}
-				worker_write(id,t.key, (char *)t.value.c_str());	
+				worker_write(id,t.key,t.value);	
 				break;
 			case DELETE_OP:
 				wid=find_container(t.key,write_router);

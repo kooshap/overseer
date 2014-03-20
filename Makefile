@@ -1,8 +1,17 @@
 #CFLAGS="-ggdb"
 CFLAGS="-pg"
 
-overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o
-	g++ $(CFLAGS) -O2 -pthread -o $@ $^ 
+overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o overseer_server.o readqueue.o
+	g++ $(CFLAGS) -O2 -pthread -o $@ $^ -levent
+
+overseer_server: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o overseer_server.o readqueue.o 
+	g++ $(CFLAGS) -O2 $^ -o $@ -levent -lpthread
+	
+overseer_server.o: overseer_server.c readqueue.c readqueue.h
+	gcc $(CFLAGS) -O2 -c overseer_server.c -levent -lpthread
+
+readqueue.o: readqueue.c
+	gcc $(CFLAGS) -O2 -c readqueue.c -levent -lpthread
 
 overseer.o: overseer.cc overseer.h worker.o
 	g++ $(CFLAGS) -std=gnu++0x -O2 -c overseer.cc 
@@ -45,6 +54,6 @@ bpt.o: bpt.c bpt.h gc.h
 
 .PHONY: clean
 clean:
-	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o offloading_policy.o gc.o bpt*.o overseer
+	-rm -f overseer.o taskQueue.o task.o worker.o statistics.o offloading_policy.o gc.o *.o bpt*.o overseer
 	
 

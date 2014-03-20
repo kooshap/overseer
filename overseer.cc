@@ -8,6 +8,13 @@
 #include "worker.h"
 #include "overseer.h"
 #include "socket_server.h"
+extern "C" {
+#include "overseer_server.h"
+}
+#include <string>
+#include "parameters.h"
+
+using namespace std;
 
 const int NREAD=500000;
 const int MAXKEY=500000;
@@ -41,7 +48,7 @@ void route_task(task t) {
 	tq[find_container(t.key, write_router)].put(t);
 }
 
-void overseer_write(int key,string val) {
+void overseer_write(int key,char *val) {
 	task t;
 	t.key=key;
 	t.value=val;
@@ -86,8 +93,8 @@ int main(){
 	}
 
 	for (int i=0;i<MAXKEY/2;i++){
-		overseer_write(i,"Hello!");
-		overseer_write(MAXKEY/2+i,"Hello2!");
+		overseer_write(i,(char *)"Hello!");
+		overseer_write(MAXKEY/2+i,(char *)"Hello2!");
 	}	
 
 	//printf("write queue filled\n");
@@ -120,8 +127,10 @@ int main(){
 	
 	printf("%d reads missed\n",miss_count);
 	*/	
-	thread server_thread=thread(run_server);
-	server_thread.join();
+	//thread server_thread=thread(runServer);
+	//server_thread.join();
+	//
+	runServer();
 	
 	for (int i=0;i<MAXKEY;i++){
 		overseer_delete(i);

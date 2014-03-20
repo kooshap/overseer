@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h> 
+#include <event2/event.h>
 #include "overseer.h"
 
 int run_server()
