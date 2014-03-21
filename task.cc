@@ -11,7 +11,7 @@ typedef enum opCodeType {
 
 struct task {
 	//task(): key(0), value(""), opCode(DELETE_OP), victim_id(0), offloader_id(0) {}
-	int key;
+	size_t key;
 	char *value;
 	opCodeType opCode;
 	int offloader_id;

@@ -27,7 +27,7 @@ typedef chrono::duration<double> sec;
 
 //string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
-int binary_search(int *arr,int key,int minIdx,int maxIdx){
+int binary_search(size_t *arr,size_t key,int minIdx,int maxIdx){
 	if (arr[maxIdx]<= key)
 		return maxIdx;
 	if (maxIdx - minIdx == 1) 
@@ -38,11 +38,11 @@ int binary_search(int *arr,int key,int minIdx,int maxIdx){
 	return binary_search(arr, key, idx, maxIdx);
 }
 
-int find_container(int key,int *routingArr) {
+int find_container(size_t key,size_t *routingArr) {
 	return binary_search(routingArr, key, 0, NUM_OF_WORKER-1);
 }
 
-bool belongTo(int workerNum, int key, int *arr) {
+bool belongTo(int workerNum, size_t key, size_t *arr) {
 	if (workerNum==(sizeof(arr)/sizeof(*arr))-1) return (arr[workerNum]<=key);
 	return (arr[workerNum]<=key) && (arr[workerNum+1]>key);
 }
@@ -51,7 +51,7 @@ void route_task(task t) {
 	tq[find_container(t.key, write_router)].put(t);
 }
 
-void overseer_write(int key,char *val) {
+void overseer_write(size_t key,char *val) {
 	task t;
 	t.key=key;
 	t.value=val;
@@ -59,7 +59,7 @@ void overseer_write(int key,char *val) {
 	route_task(t);
 }
 
-void overseer_delete(int key) {
+void overseer_delete(size_t key) {
 	task t;
 	t.key=key;
 	//t->value.clear();
@@ -73,7 +73,7 @@ void worker_exit(int id) {
 	tq[id].put(t);
 }
 
-char *overseer_read(int k){
+char *overseer_read(size_t k){
 	node *croot=root[find_container(k,read_router)];
 	record *rec=0;
 	rec=find(croot,k,0);
@@ -98,13 +98,15 @@ int main(){
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		write_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
 		read_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
-		printf("write_router[%d]=%d\n",i,write_router[i]);
+		printf("write_router[%d]=%zd\n",i,write_router[i]);
 	}
-
+	
+	/*
 	for (int i=0;i<MAXKEY/2;i++){
 		overseer_write(i,(char *)"Hello!");
 		overseer_write(MAXKEY/2+i,(char *)"Hello2!");
 	}	
+	*/
 
 	//printf("write queue filled\n");
 

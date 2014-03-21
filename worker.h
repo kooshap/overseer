@@ -6,8 +6,8 @@ extern "C"{
 }
 
 extern taskQueue *tq;
-extern int *write_router;
-extern int *read_router;
+extern size_t *write_router;
+extern size_t *read_router;
 extern node **root;
 
 //int randomKey();

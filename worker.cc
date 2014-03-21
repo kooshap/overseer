@@ -21,8 +21,8 @@ typedef chrono::duration<double> sec;
 taskQueue *tq=new taskQueue[NUM_OF_WORKER];
 
 // Write router
-int *write_router=new int[NUM_OF_WORKER];
-int *read_router=new int[NUM_OF_WORKER];
+size_t *write_router=new size_t[NUM_OF_WORKER];
+size_t *read_router=new size_t[NUM_OF_WORKER];
 
 // Root nodes of each worker's tree
 node **root=(node **)calloc(NUM_OF_WORKER,sizeof(node *));
@@ -30,7 +30,7 @@ node **root=(node **)calloc(NUM_OF_WORKER,sizeof(node *));
 // Offloading locks
 mutex offload_mutex[NUM_OF_WORKER-1];
 
-int worker_write(int id,int k, char *v){
+int worker_write(int id,size_t k, char *v){
 	if (root[id]) {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
 		root[id]=bptinsert(root[id],k,v);
@@ -42,7 +42,7 @@ int worker_write(int id,int k, char *v){
 	return 0;
 }
 
-int worker_delete(int id,int k){
+int worker_delete(int id,size_t k){
 	root[id]=bptdelete(root[id],k,id);
 	return 0;
 }
@@ -51,30 +51,34 @@ void update_write_router(task t)
 {
 	if (t.offloader_id<t.victim_id) {
 		write_router[t.victim_id]=((chunk *)t.offload_chunk)->key[0];	
-		printf("WriterRouter[%d]=%d\n",t.victim_id,write_router[t.victim_id]);
+		//printf("WriterRouter[%d]=%zd\n",t.victim_id,write_router[t.victim_id]);
 	} 
 	else {
 		int i=0;
 		chunk *offload_chunk=(chunk *)t.offload_chunk;
 		while (offload_chunk->value[i]!=NULL) i++;
 		write_router[t.offloader_id]=offload_chunk->key[i-1]+1;
-		printf("WriterRouter[%d]=%d\n",t.offloader_id,write_router[t.offloader_id]);
+		//printf("WriterRouter[%d]=%zd\n",t.offloader_id,write_router[t.offloader_id]);
 	}
+	for (int i=0;i<NUM_OF_WORKER;i++)
+		printf("WriterRouter[%d]=%zd\n",i,write_router[i]);
 }
 
 void update_read_router(task t)
 {
 	if (t.offloader_id<t.victim_id) {
 		read_router[t.victim_id]=((chunk *)t.offload_chunk)->key[0];	
-		printf("read_router[%d]=%d\n",t.victim_id,read_router[t.victim_id]);
+		//printf("read_router[%d]=%zd\n",t.victim_id,read_router[t.victim_id]);
 	} 
 	else {
 		int i=0;
 		chunk *offload_chunk=(chunk *)t.offload_chunk;
 		while (offload_chunk->value[i]!=NULL) i++;
 		read_router[t.offloader_id]=offload_chunk->key[i-1]+1;
-		printf("read_router[%d]=%d\n",t.offloader_id,read_router[t.offloader_id]);
+		//printf("read_router[%d]=%zd\n",t.offloader_id,read_router[t.offloader_id]);
 	}
+	for (int i=0;i<NUM_OF_WORKER;i++)
+		printf("WriterRouter[%d]=%zd\n",i,write_router[i]);
 }
 
 void perform_load_balancing_if_needed(int id, int &completed_tasks)
@@ -129,7 +133,7 @@ void push_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_write(id,offload_chunk->key[i],offload_chunk->value[i]->value);
-		printf("Pushed %d/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		printf("Pushed %zd/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
 		i++;
 	}
 }
@@ -141,7 +145,7 @@ void remove_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_delete(id,offload_chunk->key[i]);
-		printf("Removed %d/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
+		printf("Removed %zd/%s \n",offload_chunk->key[i], offload_chunk->value[i]->value);
 		i++;
 	}
 	free(offload_chunk->key);

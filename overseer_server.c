@@ -4,7 +4,7 @@
  * This software is licensed under the BSD license.
  * See the accompanying LICENSE.txt for details.
  *
- * To compile: gcc -o echoserver_threaded echoserver_threaded.c workqueue.c -levent -lpthread
+ * To compile: gcc -o echoserver_threaded echoserver_threaded.c readqueue.c -levent -lpthread
  * To run: ./echoserver_threaded
  */
 
@@ -24,16 +24,15 @@
 
 #include "readqueue.h"
 #include "overseer.h"
+#include "parameters.h"
 
 /* Port to listen on. */
 #define SERVER_PORT 5555
 /* Connection backlog (# of backlogged connections to accept). */
 #define CONNECTION_BACKLOG 8
 /* Socket read and write timeouts, in seconds. */
-#define SOCKET_READ_TIMEOUT_SECONDS 10
-#define SOCKET_WRITE_TIMEOUT_SECONDS 10
-/* Number of worker threads.  Should match number of CPU cores reported in /proc/cpuinfo. */
-#define NUM_THREADS 8
+#define SOCKET_READ_TIMEOUT_SECONDS 100
+#define SOCKET_WRITE_TIMEOUT_SECONDS 100
 
 /* Behaves similarly to fprintf(stderr, ...), but adds file, line, and function
  information. */
@@ -121,7 +120,8 @@ char *send_to_overseer(char *data) {
 	}
 	if (tok!=NULL) {
 		sscanf(tok,"%zd",&key);	
-		printf("KEY: %zd\n", key);
+		//printf("KEY: %zd\n", key);
+		//printf("KEY: %s\n", tok);
 		tok = strtok(NULL, " ");
 	} 
 	if (tok!=NULL) {
@@ -131,11 +131,11 @@ char *send_to_overseer(char *data) {
 		if (value[vlen-1]=='\n') {
 			value[vlen-1]='\0';
 		}
-		printf("VALUE:%s\n",value);
+		//printf("VALUE:%s\n",value);
 	}
 
 	if (command) {
-		printf("OPERATION: %c\n", command);
+		//printf("OPERATION: %c\n", command);
 		if (command=='r') {
 			return overseer_read(key);
 		}
@@ -290,7 +290,7 @@ void on_accept(int fd, short ev, void *arg) {
 	 * called. */
 	bufferevent_enable(client->buf_ev, EV_READ);
 
-	/* Create a job object and add it to the work queue. */
+	/* Create a job object and add it to the read queue. */
 	if ((job = (job_t *)malloc(sizeof(*job))) == NULL) {
 		warn("failed to allocate memory for job state");
 		closeAndFreeClient(client);
@@ -357,9 +357,9 @@ int runServer(void) {
 		return 1;
 	}
 
-	/* Initialize work queue. */
-	if (readqueue_init(&readqueue, NUM_THREADS)) {
-		perror("Failed to create work queue");
+	/* Initialize read queue. */
+	if (readqueue_init(&readqueue, NUM_NETWORK_READER)) {
+		perror("Failed to create read queue");
 		close(listenfd);
 		readqueue_shutdown(&readqueue);
 		return 1;

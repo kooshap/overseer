@@ -8,6 +8,7 @@ import com.yahoo.ycsb.StringByteIterator;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.util.Scanner;
 import java.util.Map;
@@ -20,16 +21,20 @@ import java.util.Vector;
 
 public class overseer_client extends DB {
 
-	private Socket echoSocket;
+    private static final int OK = 0;
+    private static final int SERVER_ERROR = 1;
+    private static final int CLIENT_ERROR = 2;
+    
+    private Socket echoSocket;
 	private PrintWriter out;
 	private BufferedReader in;
 	private BufferedReader stdIn;
 
 	public void init() throws DBException {
 		try {
-			Socket echoSocket = new Socket("127.0.0.1", 5000);
-			out = new PrintWriter(echoSocket.getOutputStream(),	true);
-			in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+			Socket socket = new Socket("127.0.0.1", 5555);
+			out = new PrintWriter(socket.getOutputStream(),	true);
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			stdIn = new BufferedReader(new InputStreamReader(System.in));
 			System.out.println("Connected to overseer.");
 
@@ -43,39 +48,41 @@ public class overseer_client extends DB {
 	@Override
 	public int read(String table, String key, Set<String> fields,
 			HashMap<String, ByteIterator> result) {
-		out.println("r " + key);
-		String res="";
+		out.println("r " + hash(key));
+		char[] cbuf=new char[100];
 		try {
-			res = in.readLine();
+			in.read(cbuf);
+			result.put(key,new StringByteIterator(new String(cbuf)));
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
-		return Integer.parseInt(res);
+		return result.isEmpty() ? SERVER_ERROR : OK;
 	}
 
 	@Override
 	public int insert(String table, String key,
 			HashMap<String, ByteIterator> values) {
-		out.println("w " + key);
-		String res="";
+		//System.out.println("w " + key + " " + values.entrySet().iterator().next().getValue());
+		out.println("w " + hash(key) + " " + values.entrySet().iterator().next().getValue());
+		char[] cbuf=new char[100];
 		try {
-			res = in.readLine();
+			in.read(cbuf);
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
-		return Integer.parseInt(res);
+		return OK;
 	}
 
 	@Override
 	public int delete(String table, String key) {
-		out.println("d " + key);
-		String res="";
+		out.println("d " + hash(key));
+		char[] cbuf=new char[100];
 		try {
-			res = in.readLine();
+			in.read(cbuf);
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
-		return Integer.parseInt(res);
+		return OK;
 	}
 
 	public int scan(String table, String startkey, int recordcount,
@@ -85,7 +92,18 @@ public class overseer_client extends DB {
 
 	public int update(String table, String key,
 			HashMap<String, ByteIterator> values) {
-		return 0;
+		out.println("w " + hash(key) + " " + values.entrySet().iterator().next().getValue());
+		char[] cbuf=new char[100];
+		try {
+			in.read(cbuf);
+		} catch (Exception e) {
+			System.out.println(e.toString());
+		}
+		return cbuf.toString().length()>0?1:0;
 	}
+
+    private int hash(String key) {
+        return key.hashCode();
+    }
 
 }

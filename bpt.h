@@ -39,7 +39,7 @@ typedef struct record {
 } record;
 
 typedef struct chunk {
-	int *key;
+	size_t *key;
 	record **value;
 } chunk;
 
@@ -73,7 +73,7 @@ typedef struct chunk {
  */
 typedef struct node {
 	void ** pointers;
-	int * keys;
+	size_t * keys;
 	struct node * parent;
 	bool is_leaf;
 	int num_keys;
@@ -84,7 +84,7 @@ typedef struct node {
 
 // Output and utility.
 
-record * find( node * root, int key, int thread_id );
+record * find( node * root, size_t key, int thread_id );
 record * find_smallest_key( node * root, bool verbose );
 record * find_biggest_key( node * root, bool verbose );
 chunk *get_left_most_leaf( node * root, bool verbose );
@@ -92,12 +92,12 @@ chunk *get_right_most_leaf( node * root, bool verbose );
 
 // Insertion.
 
-node * bptinsert( node * root, int key, char *value );
+node * bptinsert( node * root, size_t key, char *value );
 
 // Deletion.
 
 node * destroy_tree(node * root, int worker_id);
-node * bptdelete( node * root, int key, int worker_id);
+node * bptdelete( node * root, size_t key, int worker_id);
 
 #ifdef _cplusplus
 }

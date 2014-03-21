@@ -1,4 +1,5 @@
 #include "offloading_policy.h"
+#include <stdio.h>
 
 const float ratio_threshold=2;
 
@@ -14,7 +15,8 @@ int need_to_push(int worker_id,int num_workers)
 	float leftRatio=(left==0) ? FLT_MAX : ((float)self)/left;
 	float rightRatio=(right==0) ? FLT_MAX : ((float)self)/right;
 	if (leftRatio>ratio_threshold || rightRatio>ratio_threshold) {
-		return (leftRatio>rightRatio) ? -1 : 1;
+		//printf("Worker #%d: left ratio:%f, right ratio:%f\n",worker_id,leftRatio,rightRatio);
+		return (leftRatio>=rightRatio) ? -1 : 1;
 	} else {
 		return 0;
 	}
