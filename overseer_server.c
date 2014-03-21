@@ -63,7 +63,7 @@ typedef struct client {
 } client_t;
 
 static struct event_base *evbase_accept;
-static workqueue_t workqueue;
+static readqueue_t readqueue;
 
 /* Signal handler function (defined below). */
 static void sighandler(int signal);
@@ -110,12 +110,7 @@ static void closeAndFreeClient(client_t *client) {
 }
 
 
-
-
-
-
 char *send_to_overseer(char *data) {
-
 	size_t key;
 	char command,*tok,*result,*value;
 	
@@ -146,17 +141,14 @@ char *send_to_overseer(char *data) {
 		}
 		else if(command=='w') {
 			overseer_write(key,value);
-			return (char *)"1\n";
+			return (char *)"1";
 		}
 		else if(command=='d') {
 			overseer_delete(key);
-			return (char *)"1\n";
+			return (char *)"1";
 		}
 	}
 }
-
-
-
 
 /**
  * Called by libevent when there is data to read.
@@ -164,6 +156,7 @@ char *send_to_overseer(char *data) {
 void buffered_on_read(struct bufferevent *bev, void *arg) {
 	client_t *client = (client_t *)arg;
 	char data[4096];
+	char *out_data;
 	int nbytes;
 
 	/* Copy the data from the input buffer to the output buffer in 4096-byte chunks.
@@ -175,20 +168,18 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
 		if (nbytes > 4096) nbytes = 4096;
 		evbuffer_remove(bev->input, data, nbytes); 
 
-		send_to_overseer(data);
+		out_data = send_to_overseer(data);
 		
-		/* Add the chunk of data from our local array (data) to the client's output buffer. */
-		//evbuffer_add(client->output_buffer, data, nbytes);
+		/* Add the chunk of data to the client's output buffer. */
+		evbuffer_add(client->output_buffer, out_data, strlen(out_data));
 	}
 
 	/* Send the results to the client.  This actually only queues the results for sending.
 	 * Sending will occur asynchronously, handled by libevent. */
-	/*
 	if (bufferevent_write_buffer(bev, client->output_buffer)) {
 		errorOut("Error sending data to client on fd %d\n", client->fd);
 		closeClient(client);
 	}
-	*/
 }
 
 /**
@@ -222,7 +213,7 @@ void on_accept(int fd, short ev, void *arg) {
 	int client_fd;
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-	workqueue_t *workqueue = (workqueue_t *)arg;
+	readqueue_t *readqueue = (readqueue_t *)arg;
 	client_t *client;
 	job_t *job;
 
@@ -308,7 +299,7 @@ void on_accept(int fd, short ev, void *arg) {
 	job->job_function = server_job_function;
 	job->user_data = client;
 
-	workqueue_add_job(workqueue, job);
+	readqueue_add_job(readqueue, job);
 }
 
 /**
@@ -324,6 +315,7 @@ int runServer(void) {
 	event_init();
 
 	/* Set signal handlers */
+	/*
 	sigset_t sigset;
 	sigemptyset(&sigset);
 	struct sigaction siginfo = {
@@ -333,6 +325,7 @@ int runServer(void) {
 	};
 	sigaction(SIGINT, &siginfo, NULL);
 	sigaction(SIGTERM, &siginfo, NULL);
+	*/
 
 	/* Create our listening socket. */
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -365,16 +358,16 @@ int runServer(void) {
 	}
 
 	/* Initialize work queue. */
-	if (workqueue_init(&workqueue, NUM_THREADS)) {
+	if (readqueue_init(&readqueue, NUM_THREADS)) {
 		perror("Failed to create work queue");
 		close(listenfd);
-		workqueue_shutdown(&workqueue);
+		readqueue_shutdown(&readqueue);
 		return 1;
 	}
 
 	/* We now have a listening socket, we create a read event to
 	 * be notified when a client connects. */
-	event_set(&ev_accept, listenfd, EV_READ|EV_PERSIST, on_accept, (void *)&workqueue);
+	event_set(&ev_accept, listenfd, EV_READ|EV_PERSIST, on_accept, (void *)&readqueue);
 	event_base_set(evbase_accept, &ev_accept);
 	event_add(&ev_accept, NULL);
 
@@ -402,8 +395,8 @@ void killServer(void) {
 	if (event_base_loopexit(evbase_accept, NULL)) {
 		perror("Error shutting down server");
 	}
-	fprintf(stdout, "Stopping workers.\n");
-	workqueue_shutdown(&workqueue);
+	fprintf(stdout, "Stopping network readers.\n");
+	readqueue_shutdown(&readqueue);
 }
 
 static void sighandler(int signal) {

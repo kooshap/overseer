@@ -5,6 +5,9 @@
 #include <thread>
 #include <atomic>
 #include <math.h>
+#include <signal.h>
+#include <unistd.h>
+#include <string.h>
 #include "worker.h"
 #include "overseer.h"
 #include "socket_server.h"
@@ -81,7 +84,13 @@ char *overseer_read(int k){
 	}
 }
 
+static void sighandler(int signal) {
+	fprintf(stdout, "Received signal %d: %s.  Shutting down.\n", signal, strsignal(signal));
+	killServer();
+}
+
 int main(){
+	// The counter for active workers.
 	std::atomic<int> active_threads;
 	active_threads=NUM_OF_WORKER;
 	thread worker_thread[NUM_OF_WORKER];
@@ -112,7 +121,8 @@ int main(){
 		worker_thread[i] = thread(run,i,&active_threads,ref(tq));
 		worker_thread[i].detach();
 	}
-	this_thread::sleep_for (std::chrono::milliseconds(1000));
+
+	//this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	/*
 	int miss_count=0;
@@ -130,23 +140,36 @@ int main(){
 	//thread server_thread=thread(runServer);
 	//server_thread.join();
 	//
-	runServer();
 	
+	// Setting the signal handler.
+	struct sigaction sigIntHandler;
+
+	sigIntHandler.sa_handler = sighandler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+
+	sigaction(SIGINT, &sigIntHandler, NULL);
+
+	runServer();
+
+	/*	
 	for (int i=0;i<MAXKEY;i++){
 		overseer_delete(i);
 	}
+	*/
 	
-	this_thread::sleep_for (std::chrono::milliseconds(1000));
+	//this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		worker_exit(i);
 	}
 	
-	printf("Exit commands sent, active threads:%d\n",(int)active_threads);
+	printf("Exit commands sent, active overseer workers:%d\n",(int)active_threads);
 
 	while (active_threads)
 		this_thread::sleep_for (std::chrono::milliseconds(100));
 
+	printf("Overseer workers stopped.\n");
 	
 	Clock::time_point t1 = Clock::now();
 	//printf("All thread finished in: %f\n", sec(t1-t0).count());

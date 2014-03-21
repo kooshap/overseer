@@ -61,7 +61,7 @@ void print_stats()
 
 void *resetter()
 {
-	printf("Stat started\n");
+	fprintf(stdout,"Stat started.\n");
 	struct timespec tim, tim2;
 	tim.tv_sec = 0;
 	tim.tv_nsec = interval;
@@ -72,6 +72,6 @@ void *resetter()
 		if (stopped) break;
 		reset_stats();
 	}
-	printf("Stat stopped and freed\n");
+	fprintf(stdout, "Stat stopped and freed.\n");
 }
 

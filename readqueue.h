@@ -13,7 +13,7 @@
 typedef struct worker {
 	pthread_t thread;
 	int terminate;
-	struct workqueue *workqueue;
+	struct readqueue *readqueue;
 	struct worker *prev;
 	struct worker *next;
 } worker_t;
@@ -25,17 +25,17 @@ typedef struct job {
 	struct job *next;
 } job_t;
 
-typedef struct workqueue {
+typedef struct readqueue {
 	struct worker *workers;
 	struct job *waiting_jobs;
 	pthread_mutex_t jobs_mutex;
 	pthread_cond_t jobs_cond;
-} workqueue_t;
+} readqueue_t;
 
-int workqueue_init(workqueue_t *workqueue, int numWorkers);
+int readqueue_init(readqueue_t *readqueue, int numWorkers);
 
-void workqueue_shutdown(workqueue_t *workqueue);
+void readqueue_shutdown(readqueue_t *readqueue);
 
-void workqueue_add_job(workqueue_t *workqueue, job_t *job);
+void readqueue_add_job(readqueue_t *readqueue, job_t *job);
 
 #endif	/* #ifndef WORKQUEUE_H */

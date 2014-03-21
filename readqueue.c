@@ -29,22 +29,22 @@ static void *worker_function(void *ptr) {
 
 	while (1) {
 		/* Wait until we get notified. */
-		pthread_mutex_lock(&worker->workqueue->jobs_mutex);
-		while (worker->workqueue->waiting_jobs == NULL) {
+		pthread_mutex_lock(&worker->readqueue->jobs_mutex);
+		while (worker->readqueue->waiting_jobs == NULL) {
 			/* If we're supposed to terminate, break out of our continuous loop. */
 			if (worker->terminate) break;
 
-			pthread_cond_wait(&worker->workqueue->jobs_cond, &worker->workqueue->jobs_mutex);
+			pthread_cond_wait(&worker->readqueue->jobs_cond, &worker->readqueue->jobs_mutex);
 		}
 
 		/* If we're supposed to terminate, break out of our continuous loop. */
 		if (worker->terminate) break;
 
-		job = worker->workqueue->waiting_jobs;
+		job = worker->readqueue->waiting_jobs;
 		if (job != NULL) {
-			LL_REMOVE(job, worker->workqueue->waiting_jobs);
+			LL_REMOVE(job, worker->readqueue->waiting_jobs);
 		}
-		pthread_mutex_unlock(&worker->workqueue->jobs_mutex);
+		pthread_mutex_unlock(&worker->readqueue->jobs_mutex);
 
 		/* If we didn't get a job, then there's nothing to do at this time. */
 		if (job == NULL) continue;
@@ -57,16 +57,16 @@ static void *worker_function(void *ptr) {
 	pthread_exit(NULL);
 }
 
-int workqueue_init(workqueue_t *workqueue, int numWorkers) {
+int readqueue_init(readqueue_t *readqueue, int numWorkers) {
 	int i;
 	worker_t *worker;
 	pthread_cond_t blank_cond = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t blank_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (numWorkers < 1) numWorkers = 1;
-	memset(workqueue, 0, sizeof(*workqueue));
-	memcpy(&workqueue->jobs_mutex, &blank_mutex, sizeof(workqueue->jobs_mutex));
-	memcpy(&workqueue->jobs_cond, &blank_cond, sizeof(workqueue->jobs_cond));
+	memset(readqueue, 0, sizeof(*readqueue));
+	memcpy(&readqueue->jobs_mutex, &blank_mutex, sizeof(readqueue->jobs_mutex));
+	memcpy(&readqueue->jobs_cond, &blank_cond, sizeof(readqueue->jobs_cond));
 
 	for (i = 0; i < numWorkers; i++) {
 		if ((worker = malloc(sizeof(worker_t))) == NULL) {
@@ -74,39 +74,39 @@ int workqueue_init(workqueue_t *workqueue, int numWorkers) {
 			return 1;
 		}
 		memset(worker, 0, sizeof(*worker));
-		worker->workqueue = workqueue;
+		worker->readqueue = readqueue;
 		if (pthread_create(&worker->thread, NULL, worker_function, (void *)worker)) {
 			perror("Failed to start all worker threads");
 			free(worker);
 			return 1;
 		}
-		LL_ADD(worker, worker->workqueue->workers);
+		LL_ADD(worker, worker->readqueue->workers);
 	}
 
 	return 0;
 }
 
-void workqueue_shutdown(workqueue_t *workqueue) {
+void readqueue_shutdown(readqueue_t *readqueue) {
 	worker_t *worker = NULL;
 
 	/* Set all workers to terminate. */
-	for (worker = workqueue->workers; worker != NULL; worker = worker->next) {
+	for (worker = readqueue->workers; worker != NULL; worker = worker->next) {
 		worker->terminate = 1;
 	}
 
 	/* Remove all workers and jobs from the work queue.
 	 * wake up all workers so that they will terminate. */
-	pthread_mutex_lock(&workqueue->jobs_mutex);
-	workqueue->workers = NULL;
-	workqueue->waiting_jobs = NULL;
-	pthread_cond_broadcast(&workqueue->jobs_cond);
-	pthread_mutex_unlock(&workqueue->jobs_mutex);
+	pthread_mutex_lock(&readqueue->jobs_mutex);
+	readqueue->workers = NULL;
+	readqueue->waiting_jobs = NULL;
+	pthread_cond_broadcast(&readqueue->jobs_cond);
+	pthread_mutex_unlock(&readqueue->jobs_mutex);
 }
 
-void workqueue_add_job(workqueue_t *workqueue, job_t *job) {
+void readqueue_add_job(readqueue_t *readqueue, job_t *job) {
 	/* Add the job to the job queue, and notify a worker. */
-	pthread_mutex_lock(&workqueue->jobs_mutex);
-	LL_ADD(job, workqueue->waiting_jobs);
-	pthread_cond_signal(&workqueue->jobs_cond);
-	pthread_mutex_unlock(&workqueue->jobs_mutex);
+	pthread_mutex_lock(&readqueue->jobs_mutex);
+	LL_ADD(job, readqueue->waiting_jobs);
+	pthread_cond_signal(&readqueue->jobs_cond);
+	pthread_mutex_unlock(&readqueue->jobs_mutex);
 }
