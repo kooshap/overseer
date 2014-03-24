@@ -160,7 +160,7 @@ int main(){
 	}
 	*/
 	
-	//this_thread::sleep_for (std::chrono::milliseconds(1000));
+	this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		worker_exit(i);
@@ -181,6 +181,7 @@ int main(){
 
 	// Terminate the garbage collector thread
 	stop_gc();
+	force_empty_garbage();
 
 	// Wait for GC and Stats to end
 	//this_thread::sleep_for (std::chrono::milliseconds(500));
@@ -196,6 +197,7 @@ int main(){
 	delete[] tq;
 	delete[] read_router;
 	delete[] write_router;
+	free(root);
 	return 0;	
 
 }

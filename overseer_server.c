@@ -109,20 +109,57 @@ static void closeAndFreeClient(client_t *client) {
 }
 
 
-char *send_to_overseer(char *data) {
-	size_t key;
-	char command,*tok,*result,*value;
+char *send_to_overseer(char data[]) {
+	if (!data) return NULL;
 	
-	tok = strtok(data, " ");
+	size_t key;
+	char command,*tok=0,*result=0,*value=0;
+	const char s=' ';
+
+	command=data[0];
+	char *pch = 0;
+	char *pch2 = 0;
+	pch = strchr(data, s);
+	pch2 = strchr(pch+1, s);
+	
+	if (pch2!=NULL) {	
+		size_t keylen=((size_t)pch2-(size_t)pch)-1;
+		char *skey=(char *)malloc((keylen+1)*sizeof(*skey));
+		*skey='\0';
+		strncpy(skey,pch+1,keylen);
+		skey[keylen]='\0';
+		sscanf(skey,"%zd",&key);	
+		free(skey);
+		//printf("KEY: %zd\n", key);
+
+		int vlen=0;
+		vlen=pch2?strlen(pch2)-1:0;
+		value=(char *)malloc((vlen+1)*sizeof(*value));
+		*value='\0';
+		strncpy(value,pch2+1,vlen);
+		if (value[vlen-1]=='\n') {
+			value[vlen-1]='\0';
+		}
+		else {
+			value[vlen]='\0';
+		}
+		//printf("VALUE:%s\n",value);
+	}
+	else {
+		sscanf(pch+1,"%zd",&key);	
+	}
+
+	/*
+	//tok = strtok(data, s);
 	if (tok!=NULL) {
 		command=tok[0];
-		tok = strtok(NULL, " ");
+		tok = strtok(NULL, s);
 	}
 	if (tok!=NULL) {
 		sscanf(tok,"%zd",&key);	
 		//printf("KEY: %zd\n", key);
 		//printf("KEY: %s\n", tok);
-		tok = strtok(NULL, " ");
+		tok = strtok(NULL, s);
 	} 
 	if (tok!=NULL) {
 		int vlen=strlen(tok);
@@ -131,8 +168,9 @@ char *send_to_overseer(char *data) {
 		if (value[vlen-1]=='\n') {
 			value[vlen-1]='\0';
 		}
-		//printf("VALUE:%s\n",value);
+		printf("VALUE:%s\n",value);
 	}
+	*/
 
 	if (command) {
 		//printf("OPERATION: %c\n", command);
@@ -155,7 +193,7 @@ char *send_to_overseer(char *data) {
  */
 void buffered_on_read(struct bufferevent *bev, void *arg) {
 	client_t *client = (client_t *)arg;
-	char data[4096];
+	char data[4096]="";
 	char *out_data;
 	int nbytes;
 

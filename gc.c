@@ -197,7 +197,7 @@ void empty_garbage()
 		// release the lock
 		//pthread_mutex_unlock(&swap_mutex);
 	}
-	force_empty_garbage();
+	//force_empty_garbage();
 }
 
 // empties the garbage list without checking the versions

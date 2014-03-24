@@ -582,7 +582,7 @@ node * make_node( void ) {
 		perror("Node creation.");
 		exit(EXIT_FAILURE);
 	}
-	new_node->keys = malloc( (order - 1) * sizeof(int) );
+	new_node->keys = malloc( (order - 1) * sizeof(size_t) );
 	if (new_node->keys == NULL) {
 		perror("New node keys array.");
 		exit(EXIT_FAILURE);
@@ -659,7 +659,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, size_t key, re
 
 	new_leaf = make_leaf();
 
-	temp_keys = malloc( order * sizeof(int) );
+	temp_keys = malloc( order * sizeof(size_t) );
 	if (temp_keys == NULL) {
 		perror("Temporary keys array.");
 		exit(EXIT_FAILURE);
@@ -766,7 +766,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 		perror("Temporary pointers array for splitting nodes.");
 		exit(EXIT_FAILURE);
 	}
-	temp_keys = malloc( order * sizeof(int) );
+	temp_keys = malloc( order * sizeof(size_t) );
 	if (temp_keys == NULL) {
 		perror("Temporary keys array for splitting nodes.");
 		exit(EXIT_FAILURE);
@@ -1375,7 +1375,8 @@ node * bptdelete(node * root, size_t key, int worker_id) {
 	if (key_record != NULL && key_leaf != NULL) {
 		root = delete_entry(root, key_leaf, key, key_record, worker_id);
 		//free(key_record);
-		add_garbage(key_record,global_version,worker_id);
+		add_garbage(key_record->value,global_version,worker_id);
+		//add_garbage(key_record,global_version,worker_id);
 		++global_version;
 	}
 	return root;
@@ -1387,6 +1388,7 @@ void destroy_tree_nodes(node * root, int worker_id) {
 	if (root->is_leaf)
 		for (i = 0; i < root->num_keys; i++) {
 			//free(root->pointers[i]);
+			add_garbage(((record *)root->pointers[i])->value,global_version,worker_id);
 			add_garbage(root->pointers[i],global_version,worker_id);
 			++global_version;
 		}			
