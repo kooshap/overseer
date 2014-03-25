@@ -104,7 +104,7 @@ record * make_record(char *value);
 node * make_node( void );
 node * make_leaf( void );
 int get_left_index(node * parent, node * left);
-node * insert_into_leaf( node * leaf, size_t key, record * pointer );
+node * insert_into_leaf( node * leaf, size_t key, record * pointer, int worker_id );
 node * insert_into_leaf_after_splitting(node * root, node * leaf, size_t key, record * pointer);
 node * insert_into_node(node * root, node * parent, 
 		int left_index, size_t key, node * right);
@@ -626,7 +626,7 @@ int get_left_index(node * parent, node * left) {
  * key into a leaf.
  * Returns the altered leaf.
  */
-node * insert_into_leaf( node * leaf, size_t key, record * pointer ) {
+node * insert_into_leaf( node * leaf, size_t key, record * pointer, int worker_id ) {
 
 	int i, insertion_point;
 
@@ -634,13 +634,22 @@ node * insert_into_leaf( node * leaf, size_t key, record * pointer ) {
 	while (insertion_point < leaf->num_keys && leaf->keys[insertion_point] < key)
 		insertion_point++;
 
-	for (i = leaf->num_keys; i > insertion_point; i--) {
-		leaf->keys[i] = leaf->keys[i - 1];
-		leaf->pointers[i] = leaf->pointers[i - 1];
+	// If the key exists, update it
+	if (leaf->keys[insertion_point]==key) {
+		add_garbage(((record *)leaf->pointers[insertion_point])->value, global_version, worker_id);
+		add_garbage(leaf->pointers[insertion_point], global_version, worker_id);
+		leaf->pointers[insertion_point] = pointer;
 	}
-	leaf->keys[insertion_point] = key;
-	leaf->pointers[insertion_point] = pointer;
-	leaf->num_keys++;
+	// If the key doesn't exist, insert it
+	else {
+		for (i = leaf->num_keys; i > insertion_point; i--) {
+			leaf->keys[i] = leaf->keys[i - 1];
+			leaf->pointers[i] = leaf->pointers[i - 1];
+		}
+		leaf->keys[insertion_point] = key;
+		leaf->pointers[insertion_point] = pointer;
+		leaf->num_keys++;
+	}
 	return leaf;
 }
 
@@ -908,7 +917,7 @@ node * start_new_tree(size_t key, record * pointer) {
  * however necessary to maintain the B+ tree
  * properties.
  */
-node * bptinsert( node * root, size_t key, char *value ) {
+node * bptinsert( node * root, size_t key, char *value , int worker_id) {
 
 	record * pointer;
 	node * leaf;
@@ -917,8 +926,8 @@ node * bptinsert( node * root, size_t key, char *value ) {
 	 * duplicates.
 	 */
 
-	if (find(root, key, -1) != NULL)
-		return root;
+	//if (find(root, key, -1) != NULL)
+	//	return root;
 
 	/* Create a new record for the
 	 * value.
@@ -944,7 +953,7 @@ node * bptinsert( node * root, size_t key, char *value ) {
 	 */
 
 	if (leaf->num_keys < order - 1) {
-		leaf = insert_into_leaf(leaf, key, pointer);
+		leaf = insert_into_leaf(leaf, key, pointer, worker_id);
 		return root;
 	}
 

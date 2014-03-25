@@ -33,11 +33,11 @@ mutex offload_mutex[NUM_OF_WORKER-1];
 int worker_write(int id,size_t k, char *v){
 	if (root[id]) {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
-		root[id]=bptinsert(root[id],k,v);
+		root[id]=bptinsert(root[id],k,v,id);
 	}
 	else {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
-		root[id]=bptinsert(root[id],k,v);
+		root[id]=bptinsert(root[id],k,v,id);
 	}
 	return 0;
 }

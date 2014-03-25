@@ -11,7 +11,7 @@
 #endif
 
 // Default order is 4.
-#define DEFAULT_ORDER 4
+#define DEFAULT_ORDER 8
 
 // Minimum order is necessarily 3.  We set the maximum
 // order arbitrarily.  You may change the maximum order.
@@ -92,7 +92,7 @@ chunk *get_right_most_leaf( node * root, bool verbose );
 
 // Insertion.
 
-node * bptinsert( node * root, size_t key, char *value );
+node * bptinsert( node * root, size_t key, char *value, int worker_id );
 
 // Deletion.
 

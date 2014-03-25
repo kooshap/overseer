@@ -181,7 +181,7 @@ int main(){
 
 	// Terminate the garbage collector thread
 	stop_gc();
-	force_empty_garbage();
+	//force_empty_garbage();
 
 	// Wait for GC and Stats to end
 	//this_thread::sleep_for (std::chrono::milliseconds(500));
