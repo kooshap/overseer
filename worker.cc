@@ -133,7 +133,7 @@ void push_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_write(id,offload_chunk->key[i],offload_chunk->value[i]->value);
-		printf("Pushed %zd \n",offload_chunk->key[i]);
+		//printf("Pushed %zd \n",offload_chunk->key[i]);
 		i++;
 	}
 }
@@ -145,7 +145,7 @@ void remove_chunk(int id,task t)
 	while (offload_chunk->value[i]!=NULL)
 	{
 		worker_delete(id,offload_chunk->key[i]);
-		printf("Removed %zd \n",offload_chunk->key[i]);
+		//printf("Removed %zd \n",offload_chunk->key[i]);
 		i++;
 	}
 	free(offload_chunk->key);

@@ -31,8 +31,8 @@
 /* Connection backlog (# of backlogged connections to accept). */
 #define CONNECTION_BACKLOG 8
 /* Socket read and write timeouts, in seconds. */
-#define SOCKET_READ_TIMEOUT_SECONDS 100
-#define SOCKET_WRITE_TIMEOUT_SECONDS 100
+#define SOCKET_READ_TIMEOUT_SECONDS 10
+#define SOCKET_WRITE_TIMEOUT_SECONDS 10
 
 /* Behaves similarly to fprintf(stderr, ...), but adds file, line, and function
  information. */
@@ -110,82 +110,36 @@ static void closeAndFreeClient(client_t *client) {
 
 
 char *send_to_overseer(char data[]) {
+	//printf("%s\n",data);
 	if (!data) return NULL;
-	
+
 	size_t key;
-	char command,*tok=0,*result=0,*value=0;
-	const char s=' ';
+	char command,*value=NULL;
 
 	command=data[0];
-	char *pch = 0;
-	char *pch2 = 0;
-	pch = strchr(data, s);
-	pch2 = strchr(pch+1, s);
 	
-	if (pch2!=NULL) {	
-		size_t keylen=((size_t)pch2-(size_t)pch)-1;
-		char *skey=(char *)malloc((keylen+1)*sizeof(*skey));
-		*skey='\0';
-		strncpy(skey,pch+1,keylen);
-		skey[keylen]='\0';
-		sscanf(skey,"%zd",&key);	
-		free(skey);
-		//printf("KEY: %zd\n", key);
-
-		int vlen=0;
-		vlen=pch2?strlen(pch2)-1:0;
-		value=(char *)malloc((vlen+1)*sizeof(*value));
-		*value='\0';
-		strncpy(value,pch2+1,vlen);
-		if (value[vlen-1]=='\n') {
-			value[vlen-1]='\0';
-		}
-		else {
-			value[vlen]='\0';
-		}
-		//printf("VALUE:%s\n",value);
-	}
-	else {
-		sscanf(pch+1,"%zd",&key);	
-	}
-
-	/*
-	//tok = strtok(data, s);
-	if (tok!=NULL) {
-		command=tok[0];
-		tok = strtok(NULL, s);
-	}
-	if (tok!=NULL) {
-		sscanf(tok,"%zd",&key);	
-		//printf("KEY: %zd\n", key);
-		//printf("KEY: %s\n", tok);
-		tok = strtok(NULL, s);
-	} 
-	if (tok!=NULL) {
-		int vlen=strlen(tok);
-		value=(char *)malloc(vlen*sizeof(*value));
-		strncpy(value,tok,vlen);
-		if (value[vlen-1]=='\n') {
-			value[vlen-1]='\0';
-		}
-		printf("VALUE:%s\n",value);
-	}
-	*/
-
 	if (command) {
 		//printf("OPERATION: %c\n", command);
 		if (command=='r') {
-			return overseer_read(key);
+			sscanf(data,"%*s %zd%*[^\n\r]",&key);
+			char *result=overseer_read(key);
+			return result;
 		}
 		else if(command=='w') {
+			value=(char *)malloc(strlen(data)*sizeof(*value));
+			sscanf(data,"%*s %zd %[^\t\n]",&key,value);
 			overseer_write(key,value);
-			return (char *)"1";
+			char *result="1";
+			return result;
 		}
 		else if(command=='d') {
+			sscanf(data,"%*s %zd%*[^\n\r]",&key);
 			overseer_delete(key);
-			return (char *)"1";
+			char *result="1";
+			return result;
 		}
 	}
+	return "0\n";
 }
 
 /**
@@ -194,7 +148,7 @@ char *send_to_overseer(char data[]) {
 void buffered_on_read(struct bufferevent *bev, void *arg) {
 	client_t *client = (client_t *)arg;
 	char data[4096]="";
-	char *out_data;
+	char *result, out_data[4096]="";
 	int nbytes;
 
 	/* Copy the data from the input buffer to the output buffer in 4096-byte chunks.
@@ -206,8 +160,11 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
 		if (nbytes > 4096) nbytes = 4096;
 		evbuffer_remove(bev->input, data, nbytes); 
 
-		out_data = send_to_overseer(data);
-		
+		result = send_to_overseer(data);
+		memset(out_data,0,sizeof(out_data));
+		strcpy(out_data,result);
+		strcat(out_data,"\n");
+
 		/* Add the chunk of data to the client's output buffer. */
 		evbuffer_add(client->output_buffer, out_data, strlen(out_data));
 	}

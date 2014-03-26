@@ -635,10 +635,14 @@ node * insert_into_leaf( node * leaf, size_t key, record * pointer, int worker_i
 		insertion_point++;
 
 	// If the key exists, update it
-	if (leaf->keys[insertion_point]==key) {
-		add_garbage(((record *)leaf->pointers[insertion_point])->value, global_version, worker_id);
-		add_garbage(leaf->pointers[insertion_point], global_version, worker_id);
+	if (insertion_point < leaf->num_keys && leaf->keys[insertion_point]==key) {
+		record * r = leaf->pointers[insertion_point];
 		leaf->pointers[insertion_point] = pointer;
+		//free(r->value);
+		//free(r);
+		add_garbage(r->value , global_version, worker_id);
+		add_garbage(r, global_version, worker_id);
+		++global_version;
 	}
 	// If the key doesn't exist, insert it
 	else {

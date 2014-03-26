@@ -80,7 +80,7 @@ char *overseer_read(size_t k){
 	if (rec){
 		return rec->value;
 	}else{
-		return (char *)("-1");
+		return (char *)("");
 	}
 }
 
