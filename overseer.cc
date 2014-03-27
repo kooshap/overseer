@@ -20,7 +20,8 @@ extern "C" {
 using namespace std;
 
 const int NREAD=500000;
-const int MAXKEY=500000;
+//const int MAXKEY=500000;
+const size_t MAXKEY=4294967294;// Unsinged 32 bit integer
 
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
@@ -95,10 +96,10 @@ int main(){
 	active_threads=NUM_OF_WORKER;
 	thread worker_thread[NUM_OF_WORKER];
 	
-	for (int i=0;i<NUM_OF_WORKER;i++){
+	for (size_t i=0;i<NUM_OF_WORKER;i++){
 		write_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
 		read_router[i]=round(MAXKEY/NUM_OF_WORKER)*i;
-		printf("write_router[%d]=%zd\n",i,write_router[i]);
+		printf("write_router[%zd]=%zd\n",i,write_router[i]);
 	}
 	
 	/*

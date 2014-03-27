@@ -160,6 +160,7 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
 		if (nbytes > 4096) nbytes = 4096;
 		evbuffer_remove(bev->input, data, nbytes); 
 
+		//printf("%s",data);
 		result = send_to_overseer(data);
 		memset(out_data,0,sizeof(out_data));
 		strcpy(out_data,result);
