@@ -162,19 +162,20 @@ void buffered_on_read(struct bufferevent *bev, void *arg) {
 
 		//printf("%s",data);
 		result = send_to_overseer(data);
-		memset(out_data,0,sizeof(out_data));
-		strcpy(out_data,result);
-		strcat(out_data,"\n");
+		//memset(out_data,0,sizeof(out_data));
+		//strcpy(out_data,result);
+		//strcat(out_data,"\n");
 
 		/* Add the chunk of data to the client's output buffer. */
-		evbuffer_add(client->output_buffer, out_data, strlen(out_data));
-	}
-
-	/* Send the results to the client.  This actually only queues the results for sending.
-	 * Sending will occur asynchronously, handled by libevent. */
-	if (bufferevent_write_buffer(bev, client->output_buffer)) {
-		errorOut("Error sending data to client on fd %d\n", client->fd);
-		closeClient(client);
+		//evbuffer_add(client->output_buffer, out_data, strlen(out_data));
+		evbuffer_add_printf(client->output_buffer, "%s\n", result);
+						
+		/* Send the results to the client.  This actually only queues the results for sending.
+		 * Sending will occur asynchronously, handled by libevent. */
+		if (bufferevent_write_buffer(bev, client->output_buffer)) {
+			errorOut("Error sending data to client on fd %d\n", client->fd);
+			closeClient(client);
+		}
 	}
 }
 

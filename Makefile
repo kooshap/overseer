@@ -1,5 +1,5 @@
-CFLAGS="-ggdb"
-#CFLAGS="-pg"
+#CFLAGS="-ggdb"
+CFLAGS="-pg"
 
 overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o overseer_server.o readqueue.o
 	g++ $(CFLAGS) -O2 -pthread -o $@ $^ -levent -lpthread
