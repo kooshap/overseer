@@ -30,9 +30,12 @@ public class overseer_client extends DB {
 	private BufferedReader in;
 	private BufferedReader stdIn;
 
+	long maxInt=Integer.MAX_VALUE;
+	
 	public void init() throws DBException {
 		try {
 			Socket socket = new Socket("127.0.0.1", 5555);
+			//socket.setSoTimeout(1000);
 			out = new PrintWriter(socket.getOutputStream(),	true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			stdIn = new BufferedReader(new InputStreamReader(System.in));
@@ -49,10 +52,12 @@ public class overseer_client extends DB {
 	public int read(String table, String key, Set<String> fields,
 			HashMap<String, ByteIterator> result) {
 		out.println("r " + hash(key));
-		char[] cbuf=new char[100];
+		out.flush();
+		String buf;
 		try {
-			in.read(cbuf);
-			result.put(key,new StringByteIterator(new String(cbuf)));
+			buf=in.readLine();
+			if (buf.length()>0)
+				result.put(key,new StringByteIterator(buf));
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
@@ -64,9 +69,10 @@ public class overseer_client extends DB {
 			HashMap<String, ByteIterator> values) {
 		//System.out.println("w " + key + " " + values.entrySet().iterator().next().getValue());
 		out.println("w " + hash(key) + " " + values.entrySet().iterator().next().getValue());
-		char[] cbuf=new char[100];
+		out.flush();
+		String buf;
 		try {
-			in.read(cbuf);
+			buf=in.readLine();
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
@@ -76,9 +82,10 @@ public class overseer_client extends DB {
 	@Override
 	public int delete(String table, String key) {
 		out.println("d " + hash(key));
-		char[] cbuf=new char[100];
+		out.flush();
+		String buf;
 		try {
-			in.read(cbuf);
+			buf=in.readLine();
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
@@ -93,17 +100,18 @@ public class overseer_client extends DB {
 	public int update(String table, String key,
 			HashMap<String, ByteIterator> values) {
 		out.println("w " + hash(key) + " " + values.entrySet().iterator().next().getValue());
-		char[] cbuf=new char[100];
+		out.flush();
+		String buf;
 		try {
-			in.read(cbuf);
+			buf=in.readLine();
 		} catch (Exception e) {
 			System.out.println(e.toString());
 		}
-		return cbuf.toString().length()>0?1:0;
+		return OK;
 	}
 
-    private int hash(String key) {
-        return key.hashCode();
+    private long hash(String key) {
+    	long keyHash=key.hashCode()+maxInt+1L;
+        return keyHash;
     }
-
 }
