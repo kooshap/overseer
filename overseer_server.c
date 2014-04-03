@@ -109,7 +109,7 @@ static void closeAndFreeClient(client_t *client) {
 }
 
 
-char *send_to_overseer(char data[]) {
+char *send_to_overseer(char* data) {
 	//printf("%s\n",data);
 	if (!data) return NULL;
 
@@ -147,35 +147,25 @@ char *send_to_overseer(char data[]) {
  */
 void buffered_on_read(struct bufferevent *bev, void *arg) {
 	client_t *client = (client_t *)arg;
-	char data[4096]="";
+	char *data;
 	char *result, out_data[4096]="";
 	int nbytes;
 
-	/* Copy the data from the input buffer to the output buffer in 4096-byte chunks.
-	 * There is a one-liner to do the whole thing in one shot, but the purpose of this server
-	 * is to show actual real-world reading and writing of the input and output buffers,
-	 * so we won't take that shortcut here. */
-	while ((nbytes = EVBUFFER_LENGTH(bev->input)) > 0) {
-		/* Remove a chunk of data from the input buffer, copying it into our local array (data). */
-		if (nbytes > 4096) nbytes = 4096;
-		evbuffer_remove(bev->input, data, nbytes); 
+	data=evbuffer_readline(bev->input); 
 
-		//printf("%s",data);
-		result = send_to_overseer(data);
-		//memset(out_data,0,sizeof(out_data));
-		//strcpy(out_data,result);
-		//strcat(out_data,"\n");
+	//printf("%s",data);
+	result = send_to_overseer(data);
+	//memset(out_data,0,sizeof(out_data));
+	//strcpy(out_data,result);
+	//strcat(out_data,"\n");
 
-		/* Add the chunk of data to the client's output buffer. */
-		//evbuffer_add(client->output_buffer, out_data, strlen(out_data));
-		evbuffer_add_printf(client->output_buffer, "%s\n", result);
-						
-		/* Send the results to the client.  This actually only queues the results for sending.
-		 * Sending will occur asynchronously, handled by libevent. */
-		if (bufferevent_write_buffer(bev, client->output_buffer)) {
-			errorOut("Error sending data to client on fd %d\n", client->fd);
-			closeClient(client);
-		}
+	evbuffer_add_printf(client->output_buffer, "%s\n", result);
+
+	/* Send the results to the client.  This actually only queues the results for sending.
+	 * Sending will occur asynchronously, handled by libevent. */
+	if (bufferevent_write_buffer(bev, client->output_buffer)) {
+		errorOut("Error sending data to client on fd %d\n", client->fd);
+		closeClient(client);
 	}
 }
 
