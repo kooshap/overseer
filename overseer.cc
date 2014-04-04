@@ -3,7 +3,6 @@
 #include <random>
 #include <chrono>
 #include <thread>
-#include <atomic>
 #include <math.h>
 #include <signal.h>
 #include <unistd.h>
@@ -92,7 +91,7 @@ static void sighandler(int signal) {
 
 int main(){
 	// The counter for active workers.
-	std::atomic<int> active_threads;
+	int active_threads;
 	active_threads=NUM_OF_WORKER;
 	thread worker_thread[NUM_OF_WORKER];
 	
@@ -160,8 +159,13 @@ int main(){
 		overseer_delete(i);
 	}
 	*/
+
+	struct timespec tim, tim2;
+	tim.tv_sec = 1;
+	tim.tv_nsec = 0;
+	nanosleep(&tim, &tim2);
 	
-	this_thread::sleep_for (std::chrono::milliseconds(1000));
+	//this_thread::sleep_for (std::chrono::milliseconds(1000));
 
 	for (int i=0;i<NUM_OF_WORKER;i++){
 		worker_exit(i);
@@ -169,8 +173,11 @@ int main(){
 	
 	printf("Exit commands sent, active overseer workers:%d\n",(int)active_threads);
 
+	tim.tv_sec = 0;
+	tim.tv_nsec = 100000000;
 	while (active_threads)
-		this_thread::sleep_for (std::chrono::milliseconds(100));
+		nanosleep(&tim, &tim2);
+		//this_thread::sleep_for (std::chrono::milliseconds(100));
 
 	printf("Overseer workers stopped.\n");
 	

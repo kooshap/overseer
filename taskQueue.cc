@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-#include <atomic>
 #include <chrono>
 #include <thread>
 #include "taskQueue.h"
@@ -33,13 +32,18 @@ void taskQueue::put(task t){
 
 	taskArr[producerIdx]=t;
 	producerIdx++;
-	producerIdx.fetch_and(ARRAY_MASK);
+	producerIdx&=ARRAY_MASK;
+	//producerIdx.fetch_and(ARRAY_MASK);
 	//producerIdx=producerIdx%ARRAY_LENGTH;
 }
 task taskQueue::get(){
+	struct timespec tim, tim2;
+	tim.tv_sec = 0;
+	tim.tv_nsec = 10000;
 	while (consumerIdx==producerIdx) {
 		//printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
-		this_thread::sleep_for (std::chrono::milliseconds(1));
+		//this_thread::sleep_for (std::chrono::milliseconds(1));
+		nanosleep(&tim, &tim2);
 		continue;
 	}
 	task t=taskArr[consumerIdx];

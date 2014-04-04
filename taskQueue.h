@@ -3,7 +3,7 @@
 class taskQueue{
 	private:
 		task *taskArr;
-		std::atomic<int> producerIdx;
+		int producerIdx;
 		int consumerIdx;	
 		
 	public: 

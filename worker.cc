@@ -5,15 +5,12 @@
 #include <cstring>
 #include <random>
 #include <chrono>
-#include <atomic>
 #include <thread>
 #include "overseer.h"
 #include "worker.h"
 
 using namespace std;
 
-typedef minstd_rand G;
-typedef uniform_int_distribution<> D;
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
 
@@ -159,7 +156,7 @@ void release_offload_lock(int offloader_id,int victim_id)
 	printf("Released lock #%d\n",(offloader_id<victim_id)?offloader_id:victim_id);
 }
 
-void run(int id,std::atomic<int> *active_threads,taskQueue *&itq){
+void run(int id,int *active_threads,taskQueue *&itq){
 	//string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
 	Clock::time_point t0 = Clock::now();

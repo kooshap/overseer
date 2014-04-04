@@ -18,5 +18,5 @@ extern node **root;
 
 //void setTaskQueue(taskQueue *itq);
 
-void run(int id,std::atomic<int> *activeThreads,taskQueue *&itq);
+void run(int id,int *activeThreads,taskQueue *&itq);
 
