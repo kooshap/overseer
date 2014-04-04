@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.Scanner;
 import java.util.Map;
 import java.util.HashMap;
@@ -24,17 +26,33 @@ public class overseer_client extends DB {
     private static final int OK = 0;
     private static final int SERVER_ERROR = 1;
     private static final int CLIENT_ERROR = 2;
+    public static final String HOST_PROPERTY = "overseer.host";
+    public static final String PORT_PROPERTY = "overseer.port";
+    public static final int DEFAULT_PORT = 5555;
     
     private Socket echoSocket;
 	private PrintWriter out;
 	private BufferedReader in;
 	private BufferedReader stdIn;
-
+			
 	long maxInt=Integer.MAX_VALUE;
 	
 	public void init() throws DBException {
+		Properties props = getProperties();
+        int port;
+
 		try {
-			Socket socket = new Socket("127.0.0.1", 5555);
+			InetAddress address = InetAddress.getByName(props.getProperty(HOST_PROPERTY));
+	        String portString = props.getProperty(PORT_PROPERTY);
+	        if (portString != null) {
+	            port = Integer.parseInt(portString);
+	        }
+	        else {
+	            port = DEFAULT_PORT;
+	        }			
+	        
+	        //DatagramSocket socket = new DatagramSocket();
+			Socket socket = new Socket(address, port);
 			//socket.setSoTimeout(1000);
 			out = new PrintWriter(socket.getOutputStream(),	true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
