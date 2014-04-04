@@ -148,7 +148,7 @@ char *send_to_overseer(char* data) {
 void buffered_on_read(struct bufferevent *bev, void *arg) {
 	client_t *client = (client_t *)arg;
 	char *data;
-	char *result, out_data[4096]="";
+	char *result;
 	int nbytes;
 
 	data=evbuffer_readline(bev->input); 
