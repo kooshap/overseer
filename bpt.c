@@ -88,27 +88,27 @@ unsigned long long global_version = 1;
 void enqueue( node * new_node );
 node * dequeue( void );
 int height( node * root );
-int path_to_root( node * root, node * child );
+size_t path_to_root( node * root, node * child );
 void print_leaves( node * root );
 void print_tree( node * root );
 void find_and_print(node * root, size_t key, bool verbose); 
 void find_and_print_range(node * root, size_t range1, size_t range2, bool verbose); 
-int find_range( node * root, size_t key_start, size_t key_end, bool verbose,
-		int returned_keys[], void * returned_pointers[]); 
+size_t find_range( node * root, size_t key_start, size_t key_end, bool verbose,
+		size_t returned_keys[], void * returned_pointers[]); 
 node * find_leaf( node * root, size_t key, bool verbose );
-int cut( int length );
+size_t cut( int length );
 
 // Insertion.
 
 record * make_record(char *value);
 node * make_node( void );
 node * make_leaf( void );
-int get_left_index(node * parent, node * left);
+size_t get_left_index(node * parent, node * left);
 node * insert_into_leaf( node * leaf, size_t key, record * pointer, int worker_id );
 node * insert_into_leaf_after_splitting(node * root, node * leaf, size_t key, record * pointer);
 node * insert_into_node(node * root, node * parent, 
-		int left_index, size_t key, node * right);
-node * insert_into_node_after_splitting(node * root, node * parent, int left_index, 
+		size_t left_index, size_t key, node * right);
+node * insert_into_node_after_splitting(node * root, node * parent, size_t left_index, 
 		size_t key, node * right);
 node * insert_into_parent(node * root, node * left, size_t key, node * right);
 node * insert_into_new_root(node * left, size_t key, node * right);
@@ -116,11 +116,11 @@ node * start_new_tree(size_t key, record * pointer);
 
 // Deletion.
 
-int get_neighbor_index( node * n );
+size_t get_neighbor_index( node * n );
 node * adjust_root(node * root,int worker_id);
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime, int worker_id);
-node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
-		int k_prime_index, int k_prime);
+node * coalesce_nodes(node * root, node * n, node * neighbor, size_t neighbor_index, size_t k_prime, int worker_id);
+node * redistribute_nodes(node * root, node * n, node * neighbor, size_t neighbor_index, 
+		size_t k_prime_index, size_t k_prime);
 node * delete_entry( node * root, node * n, size_t key, void * pointer , int worker_id);
 
 
@@ -207,7 +207,7 @@ int height( node * root ) {
 /* Utility function to give the length in edges
  * of the path from any node to the root.
  */
-int path_to_root( node * root, node * child ) {
+size_t path_to_root( node * root, node * child ) {
 	int length = 0;
 	node * c = child;
 	while (c != root) {
@@ -290,16 +290,16 @@ void find_and_print(node * root, size_t key, bool verbose) {
 void find_and_print_range( node * root, size_t key_start, size_t key_end,
 		bool verbose ) {
 	int i;
-	int array_size = key_end - key_start + 1;
-	int returned_keys[array_size];
+	size_t array_size = key_end - key_start + 1;
+	size_t returned_keys[array_size];
 	void * returned_pointers[array_size];
-	int num_found = find_range( root, key_start, key_end, verbose,
+	size_t num_found = find_range( root, key_start, key_end, verbose,
 			returned_keys, returned_pointers );
 	if (!num_found)
 		printf("None found.\n");
 	else {
 		for (i = 0; i < num_found; i++)
-			printf("Key: %d   Location: %lx  Value: %s\n",
+			printf("Key: %zd   Location: %lx  Value: %s\n",
 					returned_keys[i],
 					(unsigned long)returned_pointers[i],
 					((record *)
@@ -313,8 +313,8 @@ void find_and_print_range( node * root, size_t key_start, size_t key_end,
  * returned_keys and returned_pointers, and returns the number of
  * entries found.
  */
-int find_range( node * root, size_t key_start, size_t key_end, bool verbose,
-		int returned_keys[], void * returned_pointers[]) {
+size_t find_range( node * root, size_t key_start, size_t key_end, bool verbose,
+		size_t returned_keys[], void * returned_pointers[]) {
 	int i, num_found;
 	num_found = 0;
 	node * n = find_leaf( root, key_start, verbose );
@@ -546,7 +546,7 @@ record * find_biggest_key( node * root, bool verbose ) {
 /* Finds the appropriate place to
  * split a node that is too big into two.
  */
-int cut( int length ) {
+size_t cut( int length ) {
 	if (length % 2 == 0)
 		return length/2;
 	else
@@ -613,9 +613,9 @@ node * make_leaf( void ) {
  * to find the index of the parent's pointer to 
  * the node to the left of the key to be inserted.
  */
-int get_left_index(node * parent, node * left) {
+size_t get_left_index(node * parent, node * left) {
 
-	int left_index = 0;
+	size_t left_index = 0;
 	while (left_index <= parent->num_keys && 
 			parent->pointers[left_index] != left)
 		left_index++;
@@ -666,9 +666,9 @@ node * insert_into_leaf( node * leaf, size_t key, record * pointer, int worker_i
 node * insert_into_leaf_after_splitting(node * root, node * leaf, size_t key, record * pointer) {
 
 	node * new_leaf;
-	int * temp_keys;
+	size_t * temp_keys;
 	void ** temp_pointers;
-	int insertion_index, split, new_key, i, j;
+	size_t insertion_index, split, new_key, i, j;
 
 	new_leaf = make_leaf();
 
@@ -739,7 +739,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, size_t key, re
  * without violating the B+ tree properties.
  */
 node * insert_into_node(node * root, node * n, 
-		int left_index, size_t key, node * right) {
+		size_t left_index, size_t key, node * right) {
 	int i;
 
 	for (i = n->num_keys; i > left_index; i--) {
@@ -757,12 +757,13 @@ node * insert_into_node(node * root, node * n,
  * into a node, causing the node's size to exceed
  * the order, and causing the node to split into two.
  */
-node * insert_into_node_after_splitting(node * root, node * old_node, int left_index, 
+node * insert_into_node_after_splitting(node * root, node * old_node, size_t left_index, 
 		size_t key, node * right) {
 
-	int i, j, split, k_prime;
+	int i, j, split;
+	size_t k_prime;
 	node * new_node, * child;
-	int * temp_keys;
+	size_t * temp_keys;
 	node ** temp_pointers;
 
 	/* First create a temporary set of keys and pointers
@@ -845,7 +846,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
  */
 node * insert_into_parent(node * root, node * left, size_t key, node * right) {
 
-	int left_index;
+	size_t left_index;
 	node * parent;
 
 	parent = left->parent;
@@ -979,7 +980,7 @@ node * bptinsert( node * root, size_t key, char *value , int worker_id) {
  * is the leftmost child), returns -1 to signify
  * this special case.
  */
-int get_neighbor_index( node * n ) {
+size_t get_neighbor_index( node * n ) {
 
 	int i;
 
@@ -1085,9 +1086,10 @@ node * adjust_root(node * root, int worker_id) {
  * can accept the additional entries
  * without exceeding the maximum.
  */
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime, int worker_id) {
+node * coalesce_nodes(node * root, node * n, node * neighbor, size_t neighbor_index, size_t k_prime, int worker_id) {
 
-	int i, j, neighbor_insertion_index, n_start, n_end, new_k_prime;
+	size_t i, j, neighbor_insertion_index, n_start, n_end;
+   	size_t new_k_prime;
 	node * tmp;
 	bool split;
 
@@ -1230,8 +1232,8 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
  * small node's entries without exceeding the
  * maximum
  */
-node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
-		int k_prime_index, int k_prime) {  
+node * redistribute_nodes(node * root, node * n, node * neighbor, size_t neighbor_index, 
+		size_t k_prime_index, size_t k_prime) {  
 
 	int i;
 	node * tmp;
@@ -1311,8 +1313,9 @@ node * delete_entry( node * root, node * n, size_t key, void * pointer ,int work
 
 	int min_keys;
 	node * neighbor;
-	int neighbor_index;
-	int k_prime_index, k_prime;
+	size_t neighbor_index;
+	size_t k_prime_index;
+	size_t k_prime;
 	int capacity;
 
 	// Remove key and pointer from node.

@@ -39,7 +39,7 @@ void taskQueue::put(task t){
 task taskQueue::get(){
 	struct timespec tim, tim2;
 	tim.tv_sec = 0;
-	tim.tv_nsec = 10000;
+	tim.tv_nsec = 1000000;
 	while (consumerIdx==producerIdx) {
 		//printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
 		//this_thread::sleep_for (std::chrono::milliseconds(1));
