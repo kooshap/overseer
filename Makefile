@@ -1,12 +1,12 @@
 CFLAGS=-ggdb -ljemalloc
 #CFLAGS="-pg"
 
-overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o overseer_server.o readqueue.o
+overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o overseer_server2.o
 	g++ $(CFLAGS) -O3 -pthread -o $@ $^ -levent -lpthread
 
-overseer_server: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o socket_server.o overseer_server.o readqueue.o 
-	g++ $(CFLAGS) -O3 $^ -o $@ -levent -lpthread
-	
+overseer_server2.o: overseer_server2.c
+	gcc $(CFLAGS) -O3 -c overseer_server2.c -levent
+
 overseer_server.o: overseer_server.c readqueue.c readqueue.h
 	gcc $(CFLAGS) -O3 -c overseer_server.c -levent -lpthread
 
