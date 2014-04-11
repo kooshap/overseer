@@ -1,4 +1,4 @@
-CFLAGS="-ggdb"
+CFLAGS=-ggdb -ljemalloc
 #CFLAGS="-pg"
 
 overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o overseer_server.o readqueue.o

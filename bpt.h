@@ -12,12 +12,12 @@
 #endif
 
 // Default order is 4.
-#define DEFAULT_ORDER 8
+#define DEFAULT_ORDER 128
 
 // Minimum order is necessarily 3.  We set the maximum
 // order arbitrarily.  You may change the maximum order.
 #define MIN_ORDER 3
-#define MAX_ORDER 20
+#define MAX_ORDER 200
 
 // TYPES.
 

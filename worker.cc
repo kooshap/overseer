@@ -74,8 +74,10 @@ void update_read_router(task t)
 		read_router[t.offloader_id]=offload_chunk->key[i-1]+1;
 		//printf("read_router[%d]=%zd\n",t.offloader_id,read_router[t.offloader_id]);
 	}
+	/*
 	for (int i=0;i<NUM_OF_WORKER;i++)
-		printf("WriterRouter[%d]=%zd\n",i,write_router[i]);
+		printf("ReaderRouter[%d]=%zd\n",i,write_router[i]);
+	*/
 }
 
 void perform_load_balancing_if_needed(int id, int &completed_tasks)
@@ -133,8 +135,7 @@ void push_chunk(int id,task t)
 		//printf("Pushed %zd \n",offload_chunk->key[i]);
 		i++;
 	}
-}
-
+} 
 void remove_chunk(int id,task t)
 {
 	chunk *offload_chunk=(chunk *)t.offload_chunk;
@@ -187,7 +188,7 @@ void run(int id,int *active_threads,taskQueue *&itq){
 				}
 				break;
 			case PUSH_CHUNK_OP:
-				printf("PUSH Chunk from node %d\n",t.offloader_id);
+				//printf("PUSH Chunk from node %d\n",t.offloader_id);
 				push_chunk(id,t);
 				// Update read router
 				update_read_router(t);

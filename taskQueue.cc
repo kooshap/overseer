@@ -4,8 +4,8 @@
 #include <thread>
 #include "taskQueue.h"
 
-const int ARRAY_LENGTH=1<<19;
-const int ARRAY_MASK=(1<<19)-1;
+const int ARRAY_LENGTH=1<<20;
+const int ARRAY_MASK=(1<<20)-1;
 const int MAX_INSERTERS=64;
 const int BOUND=ARRAY_LENGTH-MAX_INSERTERS;
 
@@ -27,7 +27,11 @@ taskQueue::~taskQueue()
   */
 void taskQueue::put(task t){
 	while(((producerIdx-consumerIdx)&ARRAY_MASK)>BOUND) {
-		printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
+		//printf("pId=%d, cId=%d, waiting..\n",(int)producerIdx,consumerIdx);	
+		struct timespec tim, tim2;
+		tim.tv_sec = 0;
+		tim.tv_nsec = 10000;
+		nanosleep(&tim, &tim2);
 	}
 
 	taskArr[producerIdx]=t;
