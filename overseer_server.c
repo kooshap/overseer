@@ -63,6 +63,9 @@ typedef struct client {
 
 static struct event_base *evbase_accept;
 static readqueue_t readqueue;
+static struct event_base *evbase_list[NUM_NETWORK_READER];
+static int evbase_count;
+static int evbase_index;
 
 /* Signal handler function (defined below). */
 static void sighandler(int signal);
@@ -235,12 +238,24 @@ void on_accept(int fd, short ev, void *arg) {
 		return;
 	}
 
-	if ((client->evbase = event_base_new()) == NULL) {
-		warn("client event_base creation failed");
-		closeAndFreeClient(client);
-		return;
+	if (readqueue->active_connections == 0) {
+		evbase_count = 0;
 	}
 
+	if (readqueue->active_connections<NUM_NETWORK_READER) {
+		if ((client->evbase = event_base_new()) == NULL) {
+			warn("client event_base creation failed");
+			closeAndFreeClient(client);
+			return;
+		}
+		evbase_list[evbase_count] = client->evbase;
+		evbase_count++;
+	}
+	else {
+		client->evbase = evbase_list[evbase_index];
+		evbase_index++;
+		evbase_index %= NUM_NETWORK_READER;
+	}
 	/* Create the buffered event.
 	 *
 	 * The first argument is the file descriptor that will trigger
@@ -286,7 +301,12 @@ void on_accept(int fd, short ev, void *arg) {
 	job->job_function = server_job_function;
 	job->user_data = client;
 
-	readqueue_add_job(readqueue, job);
+	if (readqueue->active_connections<NUM_NETWORK_READER) {
+		readqueue_add_job(readqueue, job);
+	}
+	else {
+		return;
+	}
 }
 
 /**

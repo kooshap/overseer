@@ -39,7 +39,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <event.h>
+#include <pthread.h>
 #include "overseer.h"
+#include "parameters.h"
 
 
 // Behaves similarly to printf(...), but adds file, line, and function
@@ -122,6 +124,7 @@ static struct command commands[] = {
 static struct cmdsocket cmd_listhead = { .next = NULL };
 static struct cmdsocket * const socketlist = &cmd_listhead;
 
+int thread_no;
 
 static void echo_func(struct cmdsocket *cmdsocket, struct command *command, const char *params)
 {
@@ -369,7 +372,7 @@ static void cmd_error(struct bufferevent *buf_event, short error, void *arg)
 	free_cmdsocket(cmdsocket);
 }
 
-static void setup_connection(int sockfd, struct sockaddr_in6 *remote_addr, struct event_base *evloop)
+static void setup_connection(int sockfd, struct sockaddr_in6 *remote_addr, struct event_base **evloop)
 {
 	struct cmdsocket *cmdsocket;
 
@@ -378,7 +381,8 @@ static void setup_connection(int sockfd, struct sockaddr_in6 *remote_addr, struc
 	}
 
 	// Copy connection info into a command handler info structure
-	cmdsocket = create_cmdsocket(sockfd, remote_addr, evloop);
+	INFO_OUT("Connection #%d established\n",thread_no);
+	cmdsocket = create_cmdsocket(sockfd, remote_addr, evloop[thread_no]);
 	if(cmdsocket == NULL) {
 		close(sockfd);
 		return;
@@ -391,7 +395,8 @@ static void setup_connection(int sockfd, struct sockaddr_in6 *remote_addr, struc
 		free_cmdsocket(cmdsocket);
 		return;
 	}
-	bufferevent_base_set(evloop, cmdsocket->buf_event);
+	bufferevent_base_set(evloop[thread_no], cmdsocket->buf_event);
+
 	bufferevent_settimeout(cmdsocket->buf_event, 60, 0);
 	if(bufferevent_enable(cmdsocket->buf_event, EV_READ)) {
 		ERROR_OUT("Error enabling buffered I/O event for fd %d.\n", sockfd);
@@ -407,7 +412,9 @@ static void setup_connection(int sockfd, struct sockaddr_in6 *remote_addr, struc
 		return;
 	}
 
-	flush_cmdsocket(cmdsocket);
+	thread_no++;
+	thread_no%=NUM_NETWORK_READER;
+	//flush_cmdsocket(cmdsocket);
 }
 
 static void cmd_connect(int listenfd, short evtype, void *arg)
@@ -434,7 +441,7 @@ static void cmd_connect(int listenfd, short evtype, void *arg)
 
 		//INFO_OUT("Client connected on fd %d\n", sockfd);
 
-		setup_connection(sockfd, &remote_addr, (struct event_base *)arg);
+		setup_connection(sockfd, &remote_addr, (struct event_base **)arg);
 	}
 }
 
@@ -449,9 +456,17 @@ int killServer()
 	}
 }
 
+void *ev_dispatch(void *evloop)
+{
+	event_base_dispatch((struct event_base*)evloop);
+}
+
 int runServer()
 {
-	struct event_base *evloop;
+	thread_no = 0;
+
+	//struct event_base *evloop = event_base_new(); // 
+	struct event_base **evloop = malloc(NUM_NETWORK_READER * sizeof(void*));
 	struct event connect_event;
 	
 	unsigned short listenport = 5555;
@@ -460,13 +475,18 @@ int runServer()
 
 	// Initialize libevent
 	INFO_OUT("libevent version: %s\n", event_get_version());
-	evloop = event_base_new();
+	int i = 0;
+	for (;i<NUM_NETWORK_READER;i++)
+	{
+		evloop[i] = event_base_new();
+	}
+
 	if(CHECK_NULL(evloop)) {
 		ERROR_OUT("Error initializing event loop.\n");
 		return -1;
 	}
-	server_loop = evloop;
-	INFO_OUT("libevent is using %s for events.\n", event_base_get_method(evloop));
+	server_loop = evloop[0];
+	INFO_OUT("libevent is using %s for events.\n", event_base_get_method(evloop[0]));
 
 	// Initialize socket address
 	memset(&local_addr, 0, sizeof(local_addr));
@@ -501,18 +521,17 @@ int runServer()
 	}
 
 	// Add an event to wait for connections
-	event_set(&connect_event, listenfd, EV_READ | EV_PERSIST, cmd_connect, evloop);
-	event_base_set(evloop, &connect_event);
+	event_set(&connect_event, listenfd, EV_READ | EV_PERSIST, cmd_connect, evloop[0]);
+	event_base_set(evloop[0], &connect_event);
 	if(event_add(&connect_event, NULL)) {
 		ERROR_OUT("Error scheduling connection event on the event loop.\n");
 	}
 
-
 	// Start the event loop
-	if(event_base_dispatch(evloop)) {
+	if(event_base_dispatch(evloop[0])) {
 		ERROR_OUT("Error running event loop.\n");
 	}
-
+	
 	INFO_OUT("Server is shutting down.\n");
 
 	// Clean up and close open connections
@@ -524,7 +543,7 @@ int runServer()
 	if(event_del(&connect_event)) {
 		ERROR_OUT("Error removing connection event from the event loop.\n");
 	}
-	event_base_free(evloop);
+	event_base_free(evloop[0]);
 	if(close(listenfd)) {
 		ERRNO_OUT("Error closing listening socket");
 	}

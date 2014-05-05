@@ -30,6 +30,7 @@ typedef struct readqueue {
 	struct job *waiting_jobs;
 	pthread_mutex_t jobs_mutex;
 	pthread_cond_t jobs_cond;
+	int active_connections;
 } readqueue_t;
 
 int readqueue_init(readqueue_t *readqueue, int numWorkers);

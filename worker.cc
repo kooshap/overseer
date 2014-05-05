@@ -27,6 +27,19 @@ node **root=(node **)calloc(NUM_OF_WORKER,sizeof(node *));
 // Offloading locks
 mutex offload_mutex[NUM_OF_WORKER-1];
 
+int stick_this_thread_to_core(int core_id) {
+	int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+	if (core_id < 0 || core_id >= num_cores)
+		return EINVAL;
+
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(core_id, &cpuset);
+
+	pthread_t current_thread = pthread_self();    
+	return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+}
+
 int worker_write(int id,size_t k, char *v){
 	if (root[id]) {
 		//printf("root: %p\n",bptinsert(root[id],k,k));
@@ -159,6 +172,8 @@ void release_offload_lock(int offloader_id,int victim_id)
 
 void run(int id,int *active_threads,taskQueue *&itq){
 	//string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
+
+	stick_this_thread_to_core(id);
 
 	Clock::time_point t0 = Clock::now();
 

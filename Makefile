@@ -1,7 +1,7 @@
 CFLAGS=-ggdb -ljemalloc
 #CFLAGS="-pg"
 
-overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o overseer_server2.o
+overseer: overseer.o worker.o task.o taskQueue.o bpt.o gc.o statistics.o offloading_policy.o overseer_server.o readqueue.o
 	g++ $(CFLAGS) -O3 -pthread -o $@ $^ -levent -lpthread
 
 overseer_server2.o: overseer_server2.c
