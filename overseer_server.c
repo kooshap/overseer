@@ -189,8 +189,8 @@ void buffered_on_error(struct bufferevent *bev, short what, void *arg) {
 
 static void server_job_function(struct job *job) {
 	client_t *client = (client_t *)job->user_data;
-
 	event_base_dispatch(client->evbase);
+	evbase_count--;
 	closeAndFreeClient(client);
 	free(job);
 }
@@ -238,21 +238,18 @@ void on_accept(int fd, short ev, void *arg) {
 		return;
 	}
 
-	if (readqueue->active_connections == 0) {
-		evbase_count = 0;
-	}
-
-	if (readqueue->active_connections<NUM_NETWORK_READER) {
+	if (evbase_count<NUM_NETWORK_READER) {
 		if ((client->evbase = event_base_new()) == NULL) {
 			warn("client event_base creation failed");
 			closeAndFreeClient(client);
 			return;
 		}
+		printf("evbase %d created for a new connection.\n", evbase_count);
 		evbase_list[evbase_count] = client->evbase;
-		evbase_count++;
 	}
 	else {
 		client->evbase = evbase_list[evbase_index];
+		printf("evbase %d assigned for a new connection.\n", evbase_index);
 		evbase_index++;
 		evbase_index %= NUM_NETWORK_READER;
 	}
@@ -301,7 +298,8 @@ void on_accept(int fd, short ev, void *arg) {
 	job->job_function = server_job_function;
 	job->user_data = client;
 
-	if (readqueue->active_connections<NUM_NETWORK_READER) {
+	if (evbase_count<NUM_NETWORK_READER) {
+		evbase_count++;
 		readqueue_add_job(readqueue, job);
 	}
 	else {

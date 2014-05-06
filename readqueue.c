@@ -50,9 +50,7 @@ static void *worker_function(void *ptr) {
 		if (job == NULL) continue;
 
 		/* Execute the job. */
-		worker->readqueue->active_connections++;
 		job->job_function(job);
-		worker->readqueue->active_connections--;
 	}
 
 	free(worker);
