@@ -173,6 +173,8 @@ void release_offload_lock(int offloader_id,int victim_id)
 void run(int id,int *active_threads,taskQueue *&itq){
 	//string list[] = {"zero","one", "two","three","four","five","six","seven","eight","nine"};
 
+	int num_op = 0;
+
 	stick_this_thread_to_core(id);
 
 	Clock::time_point t0 = Clock::now();
@@ -221,6 +223,7 @@ void run(int id,int *active_threads,taskQueue *&itq){
 		}
 		perform_load_balancing_if_needed(id,completed_tasks);
 		t=tq[id].get();
+		num_op++;
 	}
 	if (root[id]) {
 		//printf("root: %p\n",root[id]);
@@ -228,7 +231,7 @@ void run(int id,int *active_threads,taskQueue *&itq){
 	}
 
 	Clock::time_point t1 = Clock::now();
-	printf("Time: %f\n", sec(t1-t0).count());
+	printf("Worker %d - Time: %f Operations: %d\n", id, sec(t1-t0).count(), num_op);
 	
 	--*active_threads;
 }

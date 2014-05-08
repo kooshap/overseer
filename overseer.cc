@@ -20,7 +20,8 @@ using namespace std;
 
 const int NREAD=500000;
 //const int MAXKEY=500000;
-const size_t MAXKEY=4294967294;// Unsinged 32 bit integer
+//const size_t MAXKEY=4294967294;// Unsinged 32 bit integer
+const size_t MAXKEY=2147483647;// Unsinged 32 bit integer
 
 typedef chrono::high_resolution_clock Clock;
 typedef chrono::duration<double> sec;
@@ -101,12 +102,12 @@ int main(){
 		printf("write_router[%zd]=%zd\n",i,write_router[i]);
 	}
 	
-	/*
-	for (int i=0;i<MAXKEY/2;i++){
-		overseer_write(i,(char *)"Hello!");
-		overseer_write(MAXKEY/2+i,(char *)"Hello2!");
+	srand(time(NULL));	
+	for (int i=0;i<1000000;i++){
+		size_t gkey = (rand() % (size_t)(MAXKEY + 1));
+		overseer_write(gkey,(char *)"Hello!");
 	}	
-	*/
+	
 
 	//printf("write queue filled\n");
 
@@ -152,7 +153,7 @@ int main(){
 
 	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	runServer();
+	//runServer();
 
 	/*	
 	for (int i=0;i<MAXKEY;i++){
@@ -163,7 +164,7 @@ int main(){
 	struct timespec tim, tim2;
 	tim.tv_sec = 1;
 	tim.tv_nsec = 0;
-	nanosleep(&tim, &tim2);
+	//nanosleep(&tim, &tim2);
 	
 	//this_thread::sleep_for (std::chrono::milliseconds(1000));
 
